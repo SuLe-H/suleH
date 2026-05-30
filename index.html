@@ -66,7 +66,6 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <!-- 导航菜单 -->
             <div class="space-y-1">
                 <button onclick="switchMode('pvalue')" id="nav-pvalue" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> P值库</button>
                 <button onclick="switchMode('prompt')" id="nav-prompt" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 词包库</button>
@@ -85,9 +84,7 @@
         </div>
     </aside>
 
-    <!-- 主内容区 -->
     <main class="flex-1 flex flex-col h-full relative z-10">
-        <!-- 顶部极小退出按钮 (仅手机模式显示)，点击呼出侧边栏 -->
         <button id="phone-exit-btn" onclick="openSidebar()" class="tiny-exit-btn hide" title="唤出菜单">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
@@ -122,7 +119,7 @@
         </div>
     </main>
 
-    <!-- 通用添加/编辑弹窗 (保持原样) -->
+    <!-- 各种通用弹窗 -->
     <div id="modal-universal" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('modal-universal')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
@@ -138,39 +135,6 @@
         </div>
     </div>
 
-    <!-- 独立还原：词包/小剧场 查看详情弹窗 (阅读面板) -->
-    <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
-            <!-- 顶部图片背景 -->
-            <div class="h-40 bg-slate-200 relative w-full">
-                <img id="view-prompt-img" src="" class="w-full h-full object-cover hide">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div class="absolute bottom-4 left-5 right-5 flex justify-between items-end">
-                    <h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">词包名称</h3>
-                    <span id="view-prompt-cat" class="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded backdrop-blur-md border border-white/30 whitespace-nowrap">分类</span>
-                </div>
-                <button onclick="closeModal('modal-view-prompt')" class="btn-hover absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition z-20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <!-- 内容列表 -->
-            <div class="flex-1 overflow-y-auto p-5 bg-white/40">
-                <div id="view-prompt-list" class="space-y-3">
-                    <!-- 动态生成行内容和独立的复制按钮 -->
-                </div>
-            </div>
-            <!-- 底部操作 -->
-            <div class="p-4 border-t border-white/40 bg-white/50 backdrop-blur-md">
-                <button onclick="copyAllPrompts()" class="btn-hover w-full py-3 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-bold flex justify-center items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 
-                    一键复制全部内容
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 网页预览弹窗 -->
     <div id="modal-iframe" class="hide fixed inset-0 z-50 flex flex-col p-4 md:p-10">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onclick="closeModal('modal-iframe')"></div>
         <div class="relative flex-1 bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col z-10 modal-animate">
@@ -185,7 +149,6 @@
         </div>
     </div>
 
-    <!-- 手机：日记大图/详情弹窗 -->
     <div id="modal-diary-detail" class="hide fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeModal('modal-diary-detail')"></div>
         <div class="bg-white modal-animate rounded-2xl w-full max-w-sm p-6 shadow-2xl relative z-10 max-h-[80vh] flex flex-col">
@@ -198,7 +161,6 @@
         </div>
     </div>
 
-    <!-- 手机：聊天长按菜单 -->
     <div id="modal-msg-context" class="hide fixed inset-0 z-[70] flex items-end justify-center p-4 pb-10">
         <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" onclick="closeMsgContextMenu()"></div>
         <div class="bg-white rounded-2xl w-full max-w-[320px] p-2 shadow-2xl relative z-10 modal-animate flex flex-col gap-1">
@@ -244,8 +206,6 @@
             quotingMsgId: null,
             contextMsgId: null 
         };
-        
-        let currentViewingPrompts = []; // 用于存放当前查看看的词包内容
 
         function init() {
             try {
@@ -255,6 +215,7 @@
                     state = { ...state, ...parsed };
                     if(!state.phone.theme) state.phone.theme = { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' };
                     if(!state.phone.diaries) state.phone.diaries = [];
+                    // 兼容旧数据角色结构
                     state.phone.characters = state.phone.characters.map(c => ({ customUserPersona: '', chatBg: '', ...c }));
                 }
             } catch(e) {}
@@ -394,7 +355,7 @@
                 const disp = item.pvalue.startsWith('--p ') ? item.pvalue : `--p ${item.pvalue}`;
                 contentHtml = `<div class="font-mono font-bold text-slate-800 truncate text-lg">${disp}</div><p class="text-sm text-slate-500 truncate mt-1">${item.desc||'暂无'}</p>`;
             } else if (mode === 'prompt' || mode === 'theater') {
-                contentHtml = `<h3 class="font-bold text-slate-800 text-lg truncate">${item.title||item.name||'未命名'}</h3><p class="text-xs text-indigo-500 mt-1 font-medium">包含 ${item.contentList ? item.contentList.length : (item.prompts?item.prompts.length:0)} 条内容</p>`;
+                contentHtml = `<h3 class="font-bold text-slate-800 text-lg truncate">${item.title||item.name||'未命名'}</h3><p class="text-xs text-indigo-500 mt-1 font-medium">包含 ${item.contentList ? item.contentList.length : 0} 条内容</p>`;
             } else if (mode === 'web') {
                 contentHtml = `<h3 class="font-bold text-slate-800 text-lg truncate">${item.title||'未命名网站'}</h3><p class="text-xs text-blue-500 mt-1 truncate">${item.url}</p>`;
             }
@@ -523,40 +484,10 @@
             saveData(); closeModal('modal-universal'); render(); showToast('已保存');
         }
 
-        // --- ★ 独立还原：打开详细查看弹窗（带独立复制按钮） ---
         function openDetailView(item) {
-            currentViewingPrompts = item.contentList || item.prompts || [];
-            const imgEl = document.getElementById('view-prompt-img');
-            if(item.image) {
-                imgEl.src = item.image; imgEl.classList.remove('hide', 'hidden');
-            } else {
-                imgEl.classList.add('hide', 'hidden'); imgEl.src = '';
-            }
-            document.getElementById('view-prompt-title').innerText = item.title || item.name || '未命名';
-            document.getElementById('view-prompt-cat').innerText = item.category;
-
-            const listEl = document.getElementById('view-prompt-list');
-            listEl.innerHTML = '';
-            currentViewingPrompts.forEach((text, index) => {
-                const row = document.createElement('div');
-                row.className = "p-3 bg-white/80 rounded-xl border border-white shadow-sm flex items-start gap-3 group animate-fade-in";
-                row.style.animationDelay = `${index * 40}ms`;
-                row.innerHTML = `
-                    <div class="flex-shrink-0 mt-0.5 text-xs font-bold text-indigo-400 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">#${index+1}</div>
-                    <p class="text-sm text-slate-700 font-medium break-all flex-1 pt-0.5 whitespace-pre-wrap">${text}</p>
-                    <button class="btn-hover text-slate-400 hover:text-indigo-600 bg-white hover:bg-indigo-50 p-1.5 rounded-lg border border-slate-200 transition-all shadow-sm" onclick="copyToClipboard(\`${text.replace(/`/g, '\\`')}\`)" title="复制此段">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </button>
-                `;
-                listEl.appendChild(row);
-            });
-            document.getElementById('modal-view-prompt').classList.remove('hide', 'hidden');
-        }
-
-        function copyAllPrompts() {
-            if(currentViewingPrompts.length === 0) return;
-            const fullText = currentViewingPrompts.join('\n\n'); 
-            copyToClipboard(fullText, '已一键复制全部内容！');
+            const list = item.contentList || item.prompts || [];
+            const text = list.join('\n\n');
+            copyToClipboard(text, `已一键复制 ${list.length} 段内容`);
         }
 
         function openWebPreview(url) {
@@ -632,6 +563,7 @@
             return `<div class="w-14 h-14 bg-${bgColor} rounded-2xl flex items-center justify-center text-white shadow-lg transition">${defaultSvg}</div>`;
         }
 
+        // 手机 - 桌面
         function getPhoneHomeHtml() {
             const time = new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
             const t = state.phone.theme;
@@ -655,6 +587,7 @@
             `;
         }
 
+        // 手机 - 通讯录
         function getPhoneContactsHtml() {
             const chars = state.phone.characters.map(c => `
                 <div class="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer transition border-b border-slate-100" onclick="setPhoneScreen('chat', '${c.id}')">
@@ -686,6 +619,7 @@
             setPhoneScreen('chat_settings', newId);
         }
 
+        // 手机 - 聊天角色独立设置
         function getPhoneChatSettingsHtml(charId) {
             const char = state.phone.characters.find(c=>c.id===charId);
             if(!char) return '';
@@ -745,6 +679,7 @@
             `;
         }
 
+        // 独立角色设置辅助函数
         function updateCharAvatar(inputEl, charId) {
             if(inputEl.files && inputEl.files[0]) {
                 const r = new FileReader(); r.onload = e => { 
@@ -798,6 +733,7 @@
                     const parsed = JSON.parse(ev.target.result);
                     if(parsed.char && parsed.chats) {
                         if(confirm('导入将覆盖当前角色的所有人设和聊天记录，是否继续？')) {
+                            // 保持当前分配的 ID 不变，只覆盖内容
                             parsed.char.id = currentId;
                             const idx = state.phone.characters.findIndex(c=>c.id===currentId);
                             if(idx>-1) state.phone.characters[idx] = parsed.char;
@@ -810,13 +746,21 @@
             reader.readAsText(file);
         }
 
+
+        // --- 聊天长按逻辑 ---
         let pressTimer = null;
         function tStart(e, id) { pressTimer = setTimeout(() => openMsgContextMenu(id), 500); }
         function tMove() { clearTimeout(pressTimer); }
         function tEnd() { clearTimeout(pressTimer); }
 
-        function openMsgContextMenu(id) { phoneUIState.contextMsgId = id; document.getElementById('modal-msg-context').classList.remove('hide'); }
-        function closeMsgContextMenu() { phoneUIState.contextMsgId = null; document.getElementById('modal-msg-context').classList.add('hide'); }
+        function openMsgContextMenu(id) {
+            phoneUIState.contextMsgId = id;
+            document.getElementById('modal-msg-context').classList.remove('hide');
+        }
+        function closeMsgContextMenu() {
+            phoneUIState.contextMsgId = null;
+            document.getElementById('modal-msg-context').classList.add('hide');
+        }
 
         function msgActionCopy() {
             const charId = phoneUIState.activeCharId;
@@ -824,20 +768,25 @@
             if(msg) copyToClipboard(msg.content);
             closeMsgContextMenu();
         }
-        function msgActionQuote() { phoneUIState.quotingMsgId = phoneUIState.contextMsgId; closeMsgContextMenu(); renderPhone(); }
+        function msgActionQuote() {
+            phoneUIState.quotingMsgId = phoneUIState.contextMsgId;
+            closeMsgContextMenu(); renderPhone();
+        }
         function msgActionDelete() {
             const charId = phoneUIState.activeCharId;
             state.phone.chats[charId] = state.phone.chats[charId].filter(m => m.id !== phoneUIState.contextMsgId);
             saveData(); closeMsgContextMenu(); renderPhone();
         }
         function msgActionSelect() {
-            phoneUIState.chatSelectMode = true; phoneUIState.selectedChatIds.clear();
+            phoneUIState.chatSelectMode = true;
+            phoneUIState.selectedChatIds.clear();
             phoneUIState.selectedChatIds.add(phoneUIState.contextMsgId);
             closeMsgContextMenu(); renderPhone();
         }
         function cancelChatSelect() { phoneUIState.chatSelectMode = false; phoneUIState.selectedChatIds.clear(); renderPhone(); }
         function toggleChatSelect(id) {
-            if(phoneUIState.selectedChatIds.has(id)) phoneUIState.selectedChatIds.delete(id); else phoneUIState.selectedChatIds.add(id);
+            if(phoneUIState.selectedChatIds.has(id)) phoneUIState.selectedChatIds.delete(id);
+            else phoneUIState.selectedChatIds.add(id);
             renderPhone();
         }
         function deleteSelectedChats() {
@@ -848,6 +797,7 @@
         }
         function cancelQuote() { phoneUIState.quotingMsgId = null; renderPhone(); }
 
+        // 手机 - 聊天
         function getPhoneChatHtml(charId) {
             const char = state.phone.characters.find(c=>c.id===charId);
             const chats = state.phone.chats[charId] || [];
@@ -890,6 +840,7 @@
                     </div>
                 `;
             } else {
+                // 更换左侧的 AI 触发图标为 魔法火花 Sparkles
                 const sparklesIcon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
                 bottomBar = `
                     <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-3 py-2 flex items-end gap-2 z-40">
@@ -919,6 +870,7 @@
             `;
         }
 
+        // --- 聊天功能交互 ---
         function sendUserMessage(charId) {
             const inputEl = document.getElementById('chat-input');
             let content = inputEl.value.trim();
@@ -946,12 +898,14 @@
             const chatArea = document.getElementById('phone-chat-area');
             chatArea.scrollTop = chatArea.scrollHeight;
 
+            // 优先使用当前角色的自定义 User 人设，如果没有才用全局的
             const activeUserPersona = char.customUserPersona || state.phone.userPersona || '无特定设定，正常对待即可';
 
             let sysPrompt = `你的角色设定：\n${char.persona}\n\n当前用户的设定：\n${activeUserPersona}\n\n`;
             if(offline) sysPrompt += `【强制系统规则：线下长文模式】\n你必须只回复1条完整的消息，绝对不要切分。你的回复字数必须在 ${state.phone.settings.offlineMin} 到 ${state.phone.settings.offlineMax} 字之间。不要使用任何分隔符。`;
             else sysPrompt += `【强制系统规则：真实聊天模式】\n你需要把回复拆分成 1 到 5 条短消息，模拟真实人类的断句聊天节奏。绝对不要把所有话放在一个长段落里！\n你必须使用特殊符号 \`|||\` 来分隔你的每条气泡消息。\n例如：你好呀！|||今天天气真不错，要一起出去玩吗？|||等你回复哦。`;
 
+            // 去除对象中的ID等字段，只传 role 和 content 给 API
             const safeHistory = (state.phone.chats[charId] || []).map(m => ({role: m.role, content: m.content}));
             const messages = [{ role: 'system', content: sysPrompt }, ...safeHistory];
 
@@ -970,7 +924,9 @@
 
                 bubbles.forEach((b, i) => {
                     state.phone.chats[charId].push({
-                        id: 'msg_ai_'+Date.now()+'_'+i, role: 'assistant', content: b
+                        id: 'msg_ai_'+Date.now()+'_'+i,
+                        role: 'assistant', 
+                        content: b
                     });
                 });
                 saveData(); renderPhone();
@@ -979,6 +935,8 @@
             }
         }
 
+
+        // 手机 - 设置主页
         function getPhoneSettingsHtml() {
             const api = state.phone.api;
             const off = state.phone.settings;
@@ -1028,6 +986,7 @@
             `;
         }
 
+        // 手机 - 美化主题
         function getPhoneThemeHtml() {
             const t = state.phone.theme;
             return `
@@ -1079,6 +1038,7 @@
             `;
         }
 
+        // 手机 - 日记列表
         function getPhoneDiaryHtml() {
             const list = state.phone.diaries.map(d => {
                 const char = state.phone.characters.find(c=>c.id===d.charId);
@@ -1119,8 +1079,6 @@
             }
         }
 
-        function toggleOfflineMode() { state.phone.settings.offlineEnabled = !state.phone.settings.offlineEnabled; saveData(); renderPhone(); }
-
         function savePhoneSettings() {
             state.phone.api.baseUrl = document.getElementById('set-baseurl').value.trim();
             state.phone.api.key = document.getElementById('set-key').value.trim();
@@ -1131,6 +1089,7 @@
             saveData(); showToast('全局设置已保存'); setPhoneScreen('home');
         }
 
+        // 生成日记逻辑
         async function generateDiaries() {
             const api = state.phone.api;
             if(!api.key) return alert('请先在设置中填写 API Key');

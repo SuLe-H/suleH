@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MJ 灵感管理器 (P值 & 词包)</title>
+    <!-- 引入外部资源 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
+        /* 基础防崩保障：写死隐藏类，防止 Tailwind 加载失败时遮罩层挡住全屏导致按钮失效 */
+        .hide, .hidden { display: none !important; }
+        
         /* 全局与背景 */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
@@ -19,7 +23,6 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        .hide { display: none !important; }
 
         /* 磨砂玻璃质感 */
         .glass { 
@@ -47,16 +50,16 @@
         .animate-fade-in { animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         @keyframes scaleIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
         .modal-animate { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .btn-hover { transition: all 0.2s; }
+        .btn-hover { transition: all 0.2s; cursor: pointer; }
         .btn-hover:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden relative">
 
-    <!-- 移动端侧边栏遮罩 -->
+    <!-- 移动端侧边栏遮罩 (层级为20) -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hidden md:hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- 侧边栏 -->
+    <!-- 侧边栏 (层级为30) -->
     <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div class="p-4 border-b border-white/30 flex flex-col gap-4">
             <div class="flex items-center justify-between">
@@ -64,19 +67,19 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                     MJ 收藏库
                 </h1>
-                <button class="md:hidden text-slate-700 hover:text-indigo-600 p-1 btn-hover" onclick="toggleSidebar()">
+                <button class="md:hidden text-slate-700 hover:text-indigo-600 p-1 btn-hover relative z-50" onclick="toggleSidebar()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <!-- 模式切换器 -->
             <div class="flex p-1 bg-white/30 rounded-xl border border-white/50 backdrop-blur-md shadow-inner">
-                <button onclick="switchMode('pvalue')" id="tab-pvalue" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700">P值库</button>
-                <button onclick="switchMode('prompt')" id="tab-prompt" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40">词包库</button>
+                <button onclick="switchMode('pvalue')" id="tab-pvalue" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40">P值库</button>
+                <button onclick="switchMode('prompt')" id="tab-prompt" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40">词包库</button>
             </div>
         </div>
-        <div class="p-3 md:p-4 flex-1 overflow-y-auto" id="category-list"></div>
+        <div class="p-3 md:p-4 flex-1 overflow-y-auto relative z-40" id="category-list"></div>
         <div class="p-4 border-t border-white/30">
-            <button onclick="addCategory()" class="btn-hover w-full py-2 px-4 bg-white/50 hover:bg-white/80 text-slate-800 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/50 shadow-sm backdrop-blur-md">
+            <button onclick="addCategory()" class="btn-hover w-full py-2 px-4 bg-white/50 hover:bg-white/80 text-slate-800 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/50 shadow-sm backdrop-blur-md relative z-40">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 新建分类
             </button>
@@ -84,16 +87,16 @@
     </aside>
 
     <!-- 主内容区 -->
-    <main class="flex-1 flex flex-col h-full relative min-w-0">
+    <main class="flex-1 flex flex-col h-full relative min-w-0 z-10">
         <header class="min-h-[4rem] md:h-20 py-3 md:py-0 glass flex flex-col md:flex-row items-start md:items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-0">
             <div class="flex items-center gap-3 w-full md:w-auto">
-                <button onclick="toggleSidebar()" class="btn-hover md:hidden text-slate-800 bg-white/30 hover:bg-white/60 p-1.5 rounded-lg border border-white/40 -ml-1 backdrop-blur-md">
+                <button onclick="toggleSidebar()" class="btn-hover md:hidden text-slate-800 bg-white/30 hover:bg-white/60 p-1.5 rounded-lg border border-white/40 -ml-1 backdrop-blur-md relative z-50">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
                 <h2 class="text-xl md:text-2xl font-bold flex-1 truncate drop-shadow-sm text-slate-800" id="current-category-title">全部</h2>
             </div>
             
-            <div id="normal-action-bar" class="flex gap-2 md:gap-4 w-full md:w-auto justify-end">
+            <div id="normal-action-bar" class="flex gap-2 md:gap-4 w-full md:w-auto justify-end relative z-40">
                 <button onclick="toggleSelectMode()" class="btn-hover px-3 py-2 text-sm md:text-base md:px-4 text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 flex items-center gap-1 md:gap-2 shadow-sm backdrop-blur-md font-medium">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     多选
@@ -104,7 +107,7 @@
                 </button>
             </div>
 
-            <div id="bulk-action-bar" class="hide flex flex-wrap justify-end gap-2 items-center w-full md:w-auto">
+            <div id="bulk-action-bar" class="hide flex flex-wrap justify-end gap-2 items-center w-full md:w-auto relative z-40">
                 <span class="text-xs md:text-sm text-slate-700 font-medium mr-1 md:mr-2 w-full text-right md:w-auto drop-shadow-sm" id="selected-count">已选择 0 项</span>
                 <button onclick="selectAll()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 backdrop-blur-md shadow-sm">全选</button>
                 <button onclick="bulkMove()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-blue-700 bg-blue-100/60 border border-blue-200/60 rounded-xl hover:bg-blue-100/90 flex items-center gap-1 backdrop-blur-md shadow-sm">移动</button>
@@ -113,7 +116,7 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 relative z-0">
             <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 md:gap-6 pb-20"></div>
             <div id="empty-state" class="hide flex flex-col items-center justify-center h-full text-slate-600 pb-20 drop-shadow-sm">
                 <div class="bg-white/30 p-6 rounded-full backdrop-blur-md border border-white/50 mb-4 shadow-sm">
@@ -127,30 +130,30 @@
     <!-- 弹窗：添加 P值 -->
     <div id="modal-add-pvalue" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-pvalue')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] overflow-y-auto">
+        <div class="glass modal-animate rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] overflow-y-auto z-10">
             <h3 class="text-xl font-bold mb-4 text-slate-800">保存 P 值</h3>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">P 值代码</label>
-                    <input type="text" id="p-input-val" placeholder="例如: 1a2b3c 或 --p 1a2b3c" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors shadow-inner">
+                    <input type="text" id="p-input-val" placeholder="例如: 1a2b3c" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">备注/描述</label>
-                    <input type="text" id="p-input-desc" placeholder="例如: 赛博朋克风格" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors shadow-inner">
+                    <input type="text" id="p-input-desc" placeholder="例如: 赛博朋克风格" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">所属分类</label>
-                    <select id="p-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors shadow-inner"></select>
+                    <select id="p-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">参考图上传</label>
-                    <input type="file" id="p-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
+                    <input type="file" id="p-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
                     <img id="p-preview-image" class="mt-3 h-32 w-full object-cover rounded-xl border border-white/50 hide shadow-sm">
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-3">
-                <button onclick="closeModal('modal-add-pvalue')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl shadow-sm font-medium">取消</button>
-                <button onclick="savePValue()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-medium">保存</button>
+                <button onclick="closeModal('modal-add-pvalue')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl font-medium">取消</button>
+                <button onclick="savePValue()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 font-medium">保存</button>
             </div>
         </div>
     </div>
@@ -158,36 +161,33 @@
     <!-- 弹窗：添加 词包 -->
     <div id="modal-add-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-prompt')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col">
+        <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
             <h3 class="text-xl font-bold mb-4 text-slate-800 flex-shrink-0">创建词包</h3>
             <div class="space-y-4 overflow-y-auto flex-1 pr-2 pb-2">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">词包名称</label>
-                    <input type="text" id="prompt-input-name" placeholder="例如: 极致光影人像词包" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none shadow-inner">
+                    <input type="text" id="prompt-input-name" placeholder="例如: 极致光影人像词包" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">所属分类</label>
-                    <select id="prompt-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none shadow-inner"></select>
+                    <select id="prompt-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">封面图</label>
-                    <input type="file" id="prompt-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
+                    <input type="file" id="prompt-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
                     <img id="prompt-preview-image" class="mt-3 h-32 w-full object-cover rounded-xl border border-white/50 hide shadow-sm">
                 </div>
                 <div class="pt-2 border-t border-white/30">
                     <label class="block text-sm font-bold text-slate-800 mb-2 drop-shadow-sm">词包内容 (无限叠加)</label>
-                    <div id="prompt-rows-container" class="space-y-2">
-                        <!-- 动态框容器 -->
-                    </div>
-                    <button onclick="addPromptRow()" class="mt-3 btn-hover w-full py-2 border-2 border-dashed border-indigo-300/80 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all backdrop-blur-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        添加一行内容
+                    <div id="prompt-rows-container" class="space-y-2"></div>
+                    <button onclick="addPromptRow()" class="mt-3 btn-hover w-full py-2 border-2 border-dashed border-indigo-300/80 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加一行内容
                     </button>
                 </div>
             </div>
             <div class="mt-6 flex justify-end gap-3 flex-shrink-0">
-                <button onclick="closeModal('modal-add-prompt')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl shadow-sm font-medium">取消</button>
-                <button onclick="savePromptPack()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-medium">保存词包</button>
+                <button onclick="closeModal('modal-add-prompt')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl font-medium">取消</button>
+                <button onclick="savePromptPack()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 font-medium">保存词包</button>
             </div>
         </div>
     </div>
@@ -195,8 +195,7 @@
     <!-- 弹窗：查看 词包详情 -->
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-view-prompt')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh]">
-            <!-- 顶部图片背景 -->
+        <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
             <div class="h-40 bg-slate-200 relative w-full">
                 <img id="view-prompt-img" src="" class="w-full h-full object-cover hide">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
@@ -204,21 +203,16 @@
                     <h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">词包名称</h3>
                     <span id="view-prompt-cat" class="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded backdrop-blur-md border border-white/30 whitespace-nowrap">分类</span>
                 </div>
-                <button onclick="closeModal('modal-view-prompt')" class="absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition">
+                <button onclick="closeModal('modal-view-prompt')" class="btn-hover absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition z-20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <!-- 内容列表 -->
             <div class="flex-1 overflow-y-auto p-5 bg-white/40">
-                <div id="view-prompt-list" class="space-y-3">
-                    <!-- 动态生成 -->
-                </div>
+                <div id="view-prompt-list" class="space-y-3"></div>
             </div>
-            <!-- 底部操作 -->
             <div class="p-4 border-t border-white/40 bg-white/50 backdrop-blur-md">
                 <button onclick="copyAllPrompts()" class="btn-hover w-full py-3 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-bold flex justify-center items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    一键复制全部词包
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 一键复制全部词包
                 </button>
             </div>
         </div>
@@ -227,7 +221,7 @@
     <!-- 弹窗：移动 -->
     <div id="modal-move" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-move')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-sm p-6 shadow-2xl relative border border-white/60">
+        <div class="glass modal-animate rounded-2xl w-full max-w-sm p-6 shadow-2xl relative border border-white/60 z-10">
             <h3 class="text-xl font-bold mb-4 text-slate-800">移动到分类</h3>
             <select id="move-category-select" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-inner"></select>
             <div class="mt-6 flex justify-end gap-3">
@@ -241,71 +235,77 @@
     <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] text-sm md:text-base whitespace-nowrap border border-slate-700/50"></div>
 
     <script>
-        // --- 核心双模数据结构 ---
+        // 核心数据
         let state = {
-            mode: 'pvalue', // 'pvalue' or 'prompt'
+            mode: 'pvalue', 
             selectMode: false,
             selectedIds: new Set(),
             pvalue: { categories: ['默认分类'], items: [], currentCategory: '全部' },
             prompt: { categories: ['默认分类'], items: [], currentCategory: '全部' }
         };
-
-        // 用于暂存当前查看的词包内容以便全选复制
         let currentViewingPrompts = [];
 
         function init() {
-            // 数据迁移与加载
-            const newSaved = localStorage.getItem('mj_manager_v2');
-            if (newSaved) {
-                const parsed = JSON.parse(newSaved);
-                state.mode = parsed.mode || 'pvalue';
-                state.pvalue = parsed.pvalue || state.pvalue;
-                state.prompt = parsed.prompt || state.prompt;
-            } else {
-                // 兼容老版本数据迁移
-                const oldData = localStorage.getItem('mj_p_manager_data');
-                if (oldData) {
-                    const parsedOld = JSON.parse(oldData);
-                    state.pvalue.categories = parsedOld.categories || ['默认分类'];
-                    state.pvalue.items = parsedOld.items || [];
+            // 防崩措施1：拦截 LocalStorage 异常 (很多第三方网站/微信环境中会禁止导致崩溃)
+            try {
+                const newSaved = localStorage.getItem('mj_manager_v2');
+                if (newSaved) {
+                    const parsed = JSON.parse(newSaved);
+                    state.mode = parsed.mode || 'pvalue';
+                    state.pvalue = parsed.pvalue || state.pvalue;
+                    state.prompt = parsed.prompt || state.prompt;
+                } else {
+                    const oldData = localStorage.getItem('mj_p_manager_data');
+                    if (oldData) {
+                        const parsedOld = JSON.parse(oldData);
+                        state.pvalue.categories = parsedOld.categories || ['默认分类'];
+                        state.pvalue.items = parsedOld.items || [];
+                    }
                 }
+            } catch (e) {
+                console.error("无法访问本地存储，可能是由于浏览器隐私设置。当前处于无痕/游客模式，数据刷新后将会重置。");
+                showToast("浏览器权限限制，本次编辑将无法永久保存");
             }
             
-            // 初始化拖拽
-            new Sortable(document.getElementById('item-grid'), {
-                animation: 250, easing: "cubic-bezier(1, 0, 0, 1)", delay: 200, delayOnTouchOnly: true, ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    const gridItems = Array.from(document.querySelectorAll('.p-card'));
-                    const newOrder = gridItems.map(item => item.dataset.id);
-                    const currentDB = state[state.mode];
-                    
-                    let newItems = [];
-                    const otherItems = currentDB.items.filter(item => currentDB.currentCategory !== '全部' && item.category !== currentDB.currentCategory);
-                    newOrder.forEach(id => {
-                        const found = currentDB.items.find(i => i.id == id);
-                        if(found) newItems.push(found);
+            // 防崩措施2：判断 Sortable 是否加载成功 (防止 CDN 被拦截导致白屏)
+            if (typeof Sortable !== 'undefined') {
+                try {
+                    new Sortable(document.getElementById('item-grid'), {
+                        animation: 250, easing: "cubic-bezier(1, 0, 0, 1)", delay: 200, delayOnTouchOnly: true, ghostClass: 'sortable-ghost',
+                        onEnd: function (evt) {
+                            const gridItems = Array.from(document.querySelectorAll('.p-card'));
+                            const newOrder = gridItems.map(item => item.dataset.id);
+                            const currentDB = state[state.mode];
+                            let newItems = [];
+                            const otherItems = currentDB.items.filter(item => currentDB.currentCategory !== '全部' && item.category !== currentDB.currentCategory);
+                            newOrder.forEach(id => {
+                                const found = currentDB.items.find(i => i.id == id);
+                                if(found) newItems.push(found);
+                            });
+                            currentDB.items = currentDB.currentCategory === '全部' ? newItems : [...newItems, ...otherItems];
+                            saveData();
+                        }
                     });
-                    currentDB.items = currentDB.currentCategory === '全部' ? newItems : [...newItems, ...otherItems];
-                    saveData();
-                }
-            });
+                } catch(e) { console.error("拖拽初始化失败", e); }
+            }
 
-            // 图片上传预览绑定
             bindImagePreview('p-input-image', 'p-preview-image');
             bindImagePreview('prompt-input-image', 'prompt-preview-image');
 
-            switchMode(state.mode); // 渲染入口
+            switchMode(state.mode);
         }
 
         function bindImagePreview(inputId, imgId) {
-            document.getElementById(inputId).addEventListener('change', function(e) {
+            const el = document.getElementById(inputId);
+            if(!el) return;
+            el.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         const img = document.getElementById(imgId);
                         img.src = event.target.result;
-                        img.classList.remove('hide');
+                        img.classList.remove('hide', 'hidden');
                     };
                     reader.readAsDataURL(file); 
                 }
@@ -313,42 +313,42 @@
         }
 
         function saveData() {
-            const dataToSave = {
-                mode: state.mode,
-                pvalue: state.pvalue,
-                prompt: state.prompt
-            };
-            localStorage.setItem('mj_manager_v2', JSON.stringify(dataToSave));
+            try {
+                const dataToSave = { mode: state.mode, pvalue: state.pvalue, prompt: state.prompt };
+                localStorage.setItem('mj_manager_v2', JSON.stringify(dataToSave));
+            } catch (e) {
+                console.warn("保存失败，本地存储受限");
+            }
         }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden');
+                sidebar.classList.remove('-translate-x-full'); 
+                overlay.classList.remove('hide', 'hidden');
             } else {
-                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden');
+                sidebar.classList.add('-translate-x-full'); 
+                overlay.classList.add('hide', 'hidden');
             }
         }
 
-        // --- 核心切换逻辑 ---
         function switchMode(newMode) {
             state.mode = newMode;
             state.selectMode = false;
             state.selectedIds.clear();
 
-            // 更新 UI Tab 状态
             const pTab = document.getElementById('tab-pvalue');
             const prTab = document.getElementById('tab-prompt');
             if(newMode === 'pvalue') {
-                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700";
-                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40";
-                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加 P 值`;
+                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40";
+                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40";
+                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加 P 值`;
                 document.getElementById('empty-text').innerText = "还没有P值，快添加一个吧";
             } else {
-                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700";
-                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40";
-                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 创建词包`;
+                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40";
+                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40";
+                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 创建词包`;
                 document.getElementById('empty-text').innerText = "还没有词包，快创建一个吧";
             }
             
@@ -377,7 +377,7 @@
         function createCategoryNode(name, isActive) {
             const div = document.createElement('div');
             const activeClass = isActive ? 'bg-white/60 text-indigo-800 font-bold border-white/80 shadow-sm' : 'text-slate-700 hover:bg-white/40 border-transparent';
-            div.className = `flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer mb-2 transition-all duration-200 border ${activeClass}`;
+            div.className = `flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer mb-2 transition-all duration-200 border ${activeClass} relative z-40`;
             div.onclick = () => {
                 state[state.mode].currentCategory = name;
                 state.selectMode = false;
@@ -388,14 +388,14 @@
             };
 
             const left = document.createElement('div');
-            left.className = 'flex items-center gap-2 drop-shadow-sm';
+            left.className = 'flex items-center gap-2 drop-shadow-sm pointer-events-none';
             left.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg> <span>${name}</span>`;
             div.appendChild(left);
 
             const db = state[state.mode];
             if (name !== '全部' && db.categories.length > 1) {
                 const delBtn = document.createElement('button');
-                delBtn.className = 'text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50/50';
+                delBtn.className = 'text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50/50 btn-hover z-50';
                 delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -424,16 +424,15 @@
             const filteredItems = db.currentCategory === '全部' ? db.items : db.items.filter(i => i.category === db.currentCategory);
 
             if (filteredItems.length === 0) {
-                empty.classList.remove('hide');
+                empty.classList.remove('hide', 'hidden');
             } else {
-                empty.classList.add('hide');
+                empty.classList.add('hide', 'hidden');
                 filteredItems.forEach((item, index) => {
                     grid.appendChild(state.mode === 'pvalue' ? createPValueCard(item, index) : createPromptCard(item, index));
                 });
             }
         }
 
-        // --- P值 卡片生成 ---
         function createPValueCard(item, index) {
             const div = document.createElement('div');
             div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`;
@@ -451,15 +450,15 @@
 
             div.innerHTML = `
                 ${checkboxHtml}
-                <div class="card-image-container relative border-b border-white/30">
+                <div class="card-image-container relative border-b border-white/30 pointer-events-none">
                     ${imgHtml}
-                    <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-900/50 to-transparent pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
                     <span class="absolute bottom-2 left-3 text-white text-xs font-semibold bg-slate-900/40 px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 shadow-sm">${item.category}</span>
                 </div>
                 <div class="p-4 bg-gradient-to-b from-white/10 to-transparent">
                     <div class="flex items-center justify-between mb-2">
                         <span class="font-mono font-bold text-slate-800 truncate pr-2 text-lg drop-shadow-sm">${displayPValue}</span>
-                        <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="copyToClipboard('${displayPValue}')" title="复制">
+                        <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm z-20 relative" onclick="copyToClipboard('${displayPValue}')" title="复制">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>
                     </div>
@@ -469,7 +468,6 @@
             return div;
         }
 
-        // --- 词包 卡片生成 ---
         function createPromptCard(item, index) {
             const div = document.createElement('div');
             div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`;
@@ -490,7 +488,7 @@
 
             div.innerHTML = `
                 ${checkboxHtml}
-                <div class="card-image-container relative border-b border-white/30 h-32 md:h-40">
+                <div class="card-image-container relative border-b border-white/30 h-32 md:h-40 pointer-events-none">
                     ${imgHtml}
                     <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
                     <div class="absolute top-2 right-2 bg-indigo-600/90 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-md shadow-sm border border-white/20">
@@ -501,7 +499,7 @@
                     <h3 class="font-bold text-slate-800 text-lg truncate drop-shadow-sm mb-1">${item.name || '未命名词包'}</h3>
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span>
-                        <span class="text-sm text-indigo-600 font-medium group-hover:underline flex items-center gap-1">查看详情 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></span>
+                        <span class="text-sm text-indigo-600 font-medium group-hover:underline flex items-center gap-1">查看详情</span>
                     </div>
                 </div>
             `;
@@ -528,14 +526,13 @@
             const bulkBar = document.getElementById('bulk-action-bar');
             
             if (state.selectMode) {
-                normalBar.classList.add('hide'); bulkBar.classList.remove('hide');
+                normalBar.classList.add('hide', 'hidden'); bulkBar.classList.remove('hide', 'hidden');
                 document.getElementById('selected-count').innerText = `已选择 ${state.selectedIds.size} 项`;
             } else {
-                normalBar.classList.remove('hide'); bulkBar.classList.add('hide');
+                normalBar.classList.remove('hide', 'hidden'); bulkBar.classList.add('hide', 'hidden');
             }
         }
 
-        // --- 添加逻辑 ---
         function addCategory() {
             const name = prompt("请输入新分类名称：");
             const db = state[state.mode];
@@ -552,7 +549,7 @@
                 document.getElementById('p-input-val').value = '';
                 document.getElementById('p-input-desc').value = '';
                 document.getElementById('p-input-image').value = '';
-                document.getElementById('p-preview-image').classList.add('hide');
+                document.getElementById('p-preview-image').classList.add('hide', 'hidden');
                 document.getElementById('p-preview-image').src = '';
                 
                 const catSelect = document.getElementById('p-input-category');
@@ -560,25 +557,24 @@
                 db.categories.forEach(cat => {
                     catSelect.add(new Option(cat, cat, false, db.currentCategory === cat));
                 });
-                document.getElementById('modal-add-pvalue').classList.remove('hide');
+                document.getElementById('modal-add-pvalue').classList.remove('hide', 'hidden');
             } else {
                 document.getElementById('prompt-input-name').value = '';
                 document.getElementById('prompt-input-image').value = '';
-                document.getElementById('prompt-preview-image').classList.add('hide');
+                document.getElementById('prompt-preview-image').classList.add('hide', 'hidden');
                 document.getElementById('prompt-preview-image').src = '';
                 document.getElementById('prompt-rows-container').innerHTML = '';
-                addPromptRow(); // 默认给一行
+                addPromptRow(); 
                 
                 const catSelect = document.getElementById('prompt-input-category');
                 catSelect.innerHTML = '';
                 db.categories.forEach(cat => {
                     catSelect.add(new Option(cat, cat, false, db.currentCategory === cat));
                 });
-                document.getElementById('modal-add-prompt').classList.remove('hide');
+                document.getElementById('modal-add-prompt').classList.remove('hide', 'hidden');
             }
         }
 
-        // 动态添加词包行
         function addPromptRow(val = '') {
             const container = document.getElementById('prompt-rows-container');
             const num = container.children.length + 1;
@@ -587,8 +583,8 @@
             row.style.animationDuration = '0.3s';
             row.innerHTML = `
                 <div class="flex-shrink-0 w-8 h-10 flex items-center justify-center bg-white/50 text-indigo-800 font-bold rounded-xl border border-white/60 shadow-inner">${num}</div>
-                <textarea class="prompt-row-input flex-1 px-3 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-inner resize-y min-h-[40px] text-sm" placeholder="输入第 ${num} 段词包内容...">${val}</textarea>
-                <button onclick="this.parentElement.remove(); updatePromptRowNumbers();" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all border border-transparent hover:border-red-200" title="删除此行">
+                <textarea class="prompt-row-input flex-1 px-3 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-inner resize-y min-h-[40px] text-sm" placeholder="输入第 ${num} 段词包...">${val}</textarea>
+                <button onclick="this.parentElement.remove(); updatePromptRowNumbers();" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all border border-transparent btn-hover">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             `;
@@ -599,11 +595,11 @@
             const container = document.getElementById('prompt-rows-container');
             Array.from(container.children).forEach((row, index) => {
                 row.querySelector('div').innerText = index + 1;
-                row.querySelector('textarea').placeholder = `输入第 ${index + 1} 段词包内容...`;
+                row.querySelector('textarea').placeholder = `输入第 ${index + 1} 段词包...`;
             });
         }
 
-        function closeModal(id) { document.getElementById(id).classList.add('hide'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hide', 'hidden'); }
 
         function savePValue() {
             const pvalue = document.getElementById('p-input-val').value.trim();
@@ -625,13 +621,12 @@
             const name = document.getElementById('prompt-input-name').value.trim();
             if (!name) return showToast('请填写词包名称！');
 
-            // 收集所有内容
             const inputs = document.querySelectorAll('.prompt-row-input');
             const prompts = [];
             inputs.forEach(input => {
                 if(input.value.trim() !== '') prompts.push(input.value.trim());
             });
-            if(prompts.length === 0) return showToast('至少需要一行非空的词包内容！');
+            if(prompts.length === 0) return showToast('至少需要一行内容！');
 
             const db = state.prompt;
             const imgSrc = document.getElementById('prompt-preview-image').src;
@@ -656,17 +651,14 @@
             showToast('保存成功！');
         }
 
-        // --- 查看词包 ---
         function openViewPromptModal(item) {
             currentViewingPrompts = item.prompts || [];
-            
             const imgEl = document.getElementById('view-prompt-img');
             if(item.image) {
-                imgEl.src = item.image; imgEl.classList.remove('hide');
+                imgEl.src = item.image; imgEl.classList.remove('hide', 'hidden');
             } else {
-                imgEl.classList.add('hide'); imgEl.src = '';
+                imgEl.classList.add('hide', 'hidden'); imgEl.src = '';
             }
-            
             document.getElementById('view-prompt-title').innerText = item.name;
             document.getElementById('view-prompt-cat').innerText = item.category;
 
@@ -685,36 +677,40 @@
                 `;
                 listEl.appendChild(row);
             });
-
-            document.getElementById('modal-view-prompt').classList.remove('hide');
+            document.getElementById('modal-view-prompt').classList.remove('hide', 'hidden');
         }
 
         function copyAllPrompts() {
             if(currentViewingPrompts.length === 0) return;
-            const fullText = currentViewingPrompts.join('\n\n'); // 以双换行拼接
+            const fullText = currentViewingPrompts.join('\n\n'); 
             copyToClipboard(fullText, '已一键复制全部词包内容！');
         }
 
         function copyToClipboard(text, successMsg = null) {
-            navigator.clipboard.writeText(text).then(() => {
+            // 创建一个临时的文本框用于复制，兼容更多浏览器
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
                 showToast(successMsg || '复制成功');
-            }).catch(() => showToast('复制失败，请手动选择复制'));
+            } catch (err) {
+                showToast('复制失败，请手动选择复制');
+            } finally {
+                document.body.removeChild(textarea);
+            }
         }
 
-        // --- 批量操作 ---
-        function toggleSelectMode() {
-            state.selectMode = !state.selectMode;
-            state.selectedIds.clear();
-            render();
-        }
+        function toggleSelectMode() { state.selectMode = !state.selectMode; state.selectedIds.clear(); render(); }
 
         function selectAll() {
             const db = state[state.mode];
             const filteredItems = db.currentCategory === '全部' ? db.items : db.items.filter(i => i.category === db.currentCategory);
-            
             if (state.selectedIds.size === filteredItems.length && filteredItems.length > 0) state.selectedIds.clear(); 
             else filteredItems.forEach(item => state.selectedIds.add(item.id));
-            
             renderItems(); updateActionBar();
         }
 
@@ -732,17 +728,13 @@
             if (state.selectedIds.size === 0) return showToast('请先选择项目');
             const catSelect = document.getElementById('move-category-select');
             catSelect.innerHTML = '';
-            state[state.mode].categories.forEach(cat => {
-                catSelect.appendChild(new Option(cat, cat));
-            });
-            document.getElementById('modal-move').classList.remove('hide');
+            state[state.mode].categories.forEach(cat => { catSelect.appendChild(new Option(cat, cat)); });
+            document.getElementById('modal-move').classList.remove('hide', 'hidden');
         }
 
         function confirmMove() {
             const targetCategory = document.getElementById('move-category-select').value;
-            state[state.mode].items.forEach(item => {
-                if (state.selectedIds.has(item.id)) item.category = targetCategory;
-            });
+            state[state.mode].items.forEach(item => { if (state.selectedIds.has(item.id)) item.category = targetCategory; });
             state.selectedIds.clear(); state.selectMode = false;
             saveData(); closeModal('modal-move'); render(); showToast('移动成功');
         }
@@ -751,8 +743,7 @@
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
-            toast.classList.remove('opacity-0', 'translate-y-4');
-            toast.classList.add('translate-y-0');
+            toast.classList.remove('opacity-0', 'translate-y-4'); toast.classList.add('translate-y-0');
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-4'); toast.classList.remove('translate-y-0');

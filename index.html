@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* 基础防崩保障：写死隐藏类，防止 Tailwind 加载失败时遮罩层挡住全屏导致按钮失效 */
+        /* 防崩保障：写死隐藏类 */
         .hide, .hidden { display: none !important; }
         
         /* 全局与背景 */
@@ -56,10 +56,9 @@
 </head>
 <body class="h-screen flex overflow-hidden relative">
 
-    <!-- 移动端侧边栏遮罩 (层级为20) -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hidden md:hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- 侧边栏 (层级为30) -->
+    <!-- 侧边栏 -->
     <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div class="p-4 border-b border-white/30 flex flex-col gap-4">
             <div class="flex items-center justify-between">
@@ -127,11 +126,11 @@
         </div>
     </main>
 
-    <!-- 弹窗：添加 P值 -->
+    <!-- 弹窗：添加/编辑 P值 -->
     <div id="modal-add-pvalue" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-pvalue')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] overflow-y-auto z-10">
-            <h3 class="text-xl font-bold mb-4 text-slate-800">保存 P 值</h3>
+            <h3 class="text-xl font-bold mb-4 text-slate-800" id="modal-title-pvalue">保存 P 值</h3>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">P 值代码</label>
@@ -158,11 +157,11 @@
         </div>
     </div>
 
-    <!-- 弹窗：添加 词包 -->
+    <!-- 弹窗：添加/编辑 词包 -->
     <div id="modal-add-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
-            <h3 class="text-xl font-bold mb-4 text-slate-800 flex-shrink-0">创建词包</h3>
+            <h3 class="text-xl font-bold mb-4 text-slate-800 flex-shrink-0" id="modal-title-prompt">创建词包</h3>
             <div class="space-y-4 overflow-y-auto flex-1 pr-2 pb-2">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">词包名称</label>
@@ -235,7 +234,6 @@
     <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] text-sm md:text-base whitespace-nowrap border border-slate-700/50"></div>
 
     <script>
-        // 核心数据
         let state = {
             mode: 'pvalue', 
             selectMode: false,
@@ -244,9 +242,11 @@
             prompt: { categories: ['默认分类'], items: [], currentCategory: '全部' }
         };
         let currentViewingPrompts = [];
+        
+        // --- 核心：编辑状态 ID 记录 ---
+        let editingId = null;
 
         function init() {
-            // 防崩措施1：拦截 LocalStorage 异常 (很多第三方网站/微信环境中会禁止导致崩溃)
             try {
                 const newSaved = localStorage.getItem('mj_manager_v2');
                 if (newSaved) {
@@ -263,11 +263,9 @@
                     }
                 }
             } catch (e) {
-                console.error("无法访问本地存储，可能是由于浏览器隐私设置。当前处于无痕/游客模式，数据刷新后将会重置。");
-                showToast("浏览器权限限制，本次编辑将无法永久保存");
+                console.error("无法访问本地存储，可能是由于浏览器隐私设置。");
             }
             
-            // 防崩措施2：判断 Sortable 是否加载成功 (防止 CDN 被拦截导致白屏)
             if (typeof Sortable !== 'undefined') {
                 try {
                     new Sortable(document.getElementById('item-grid'), {
@@ -286,7 +284,7 @@
                             saveData();
                         }
                     });
-                } catch(e) { console.error("拖拽初始化失败", e); }
+                } catch(e) {}
             }
 
             bindImagePreview('p-input-image', 'p-preview-image');
@@ -316,20 +314,16 @@
             try {
                 const dataToSave = { mode: state.mode, pvalue: state.pvalue, prompt: state.prompt };
                 localStorage.setItem('mj_manager_v2', JSON.stringify(dataToSave));
-            } catch (e) {
-                console.warn("保存失败，本地存储受限");
-            }
+            } catch (e) {}
         }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full'); 
-                overlay.classList.remove('hide', 'hidden');
+                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hide', 'hidden');
             } else {
-                sidebar.classList.add('-translate-x-full'); 
-                overlay.classList.add('hide', 'hidden');
+                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hide', 'hidden');
             }
         }
 
@@ -367,7 +361,6 @@
             const list = document.getElementById('category-list');
             list.innerHTML = '';
             const db = state[state.mode];
-            
             list.appendChild(createCategoryNode('全部', db.currentCategory === '全部'));
             db.categories.forEach(cat => {
                 list.appendChild(createCategoryNode(cat, db.currentCategory === cat));
@@ -440,7 +433,8 @@
             div.dataset.id = item.id;
 
             div.onclick = (e) => {
-                if(e.target.closest('.copy-btn')) return; 
+                // 拦截编辑和复制按钮点击
+                if(e.target.closest('.copy-btn') || e.target.closest('.edit-btn')) return; 
                 if(state.selectMode) toggleSelect(item.id);
             };
 
@@ -458,9 +452,15 @@
                 <div class="p-4 bg-gradient-to-b from-white/10 to-transparent">
                     <div class="flex items-center justify-between mb-2">
                         <span class="font-mono font-bold text-slate-800 truncate pr-2 text-lg drop-shadow-sm">${displayPValue}</span>
-                        <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm z-20 relative" onclick="copyToClipboard('${displayPValue}')" title="复制">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        </button>
+                        <div class="flex items-center gap-1 z-20 relative">
+                            <!-- 新增：编辑按钮 -->
+                            <button class="edit-btn btn-hover p-1.5 text-slate-500 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="openEditPValue('${item.id}')" title="编辑">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="copyToClipboard('${displayPValue}')" title="复制">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
                     </div>
                     <p class="text-sm text-slate-600 truncate font-medium drop-shadow-sm" title="${item.desc}">${item.desc || '暂无描述'}</p>
                 </div>
@@ -475,6 +475,7 @@
             div.dataset.id = item.id;
 
             div.onclick = (e) => {
+                if(e.target.closest('.edit-btn')) return; // 拦截编辑按钮
                 if(state.selectMode) {
                     toggleSelect(item.id);
                 } else {
@@ -499,7 +500,13 @@
                     <h3 class="font-bold text-slate-800 text-lg truncate drop-shadow-sm mb-1">${item.name || '未命名词包'}</h3>
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span>
-                        <span class="text-sm text-indigo-600 font-medium group-hover:underline flex items-center gap-1">查看详情</span>
+                        <div class="flex items-center gap-2 relative z-20">
+                            <!-- 新增：编辑按钮 -->
+                            <button class="edit-btn btn-hover p-1 text-slate-400 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-lg transition-all" onclick="openEditPrompt('${item.id}')" title="编辑">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <span class="text-sm text-indigo-600 font-medium group-hover:underline flex items-center gap-1">查看详情</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -543,9 +550,12 @@
             }
         }
 
+        // --- 打开【新建】窗口 ---
         function openAddModal() {
+            editingId = null; // 标记为新建
             const db = state[state.mode];
             if(state.mode === 'pvalue') {
+                document.getElementById('modal-title-pvalue').innerText = "保存 P 值";
                 document.getElementById('p-input-val').value = '';
                 document.getElementById('p-input-desc').value = '';
                 document.getElementById('p-input-image').value = '';
@@ -559,6 +569,7 @@
                 });
                 document.getElementById('modal-add-pvalue').classList.remove('hide', 'hidden');
             } else {
+                document.getElementById('modal-title-prompt').innerText = "创建词包";
                 document.getElementById('prompt-input-name').value = '';
                 document.getElementById('prompt-input-image').value = '';
                 document.getElementById('prompt-preview-image').classList.add('hide', 'hidden');
@@ -573,6 +584,70 @@
                 });
                 document.getElementById('modal-add-prompt').classList.remove('hide', 'hidden');
             }
+        }
+
+        // --- 打开【编辑】窗口 ---
+        function openEditPValue(id) {
+            editingId = id; // 标记为编辑
+            const item = state.pvalue.items.find(i => i.id === id);
+            if(!item) return;
+
+            document.getElementById('modal-title-pvalue').innerText = "编辑 P 值";
+            document.getElementById('p-input-val').value = item.pvalue;
+            document.getElementById('p-input-desc').value = item.desc || '';
+            document.getElementById('p-input-image').value = ''; // 无法赋予文件路径，但保留原图
+            
+            const imgEl = document.getElementById('p-preview-image');
+            if(item.image) {
+                imgEl.src = item.image;
+                imgEl.classList.remove('hide', 'hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hide', 'hidden');
+            }
+
+            const catSelect = document.getElementById('p-input-category');
+            catSelect.innerHTML = '';
+            state.pvalue.categories.forEach(cat => {
+                catSelect.add(new Option(cat, cat, false, item.category === cat));
+            });
+
+            document.getElementById('modal-add-pvalue').classList.remove('hide', 'hidden');
+        }
+
+        function openEditPrompt(id) {
+            editingId = id; // 标记为编辑
+            const item = state.prompt.items.find(i => i.id === id);
+            if(!item) return;
+
+            document.getElementById('modal-title-prompt').innerText = "编辑词包";
+            document.getElementById('prompt-input-name').value = item.name;
+            document.getElementById('prompt-input-image').value = '';
+            
+            const imgEl = document.getElementById('prompt-preview-image');
+            if(item.image) {
+                imgEl.src = item.image;
+                imgEl.classList.remove('hide', 'hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hide', 'hidden');
+            }
+
+            // 还原旧的词包内容
+            document.getElementById('prompt-rows-container').innerHTML = '';
+            if(item.prompts && item.prompts.length > 0) {
+                item.prompts.forEach(p => addPromptRow(p));
+            } else {
+                addPromptRow(); // 至少给一行空的
+            }
+
+            const catSelect = document.getElementById('prompt-input-category');
+            catSelect.innerHTML = '';
+            state.prompt.categories.forEach(cat => {
+                catSelect.add(new Option(cat, cat, false, item.category === cat));
+            });
+
+            document.getElementById('modal-add-prompt').classList.remove('hide', 'hidden');
         }
 
         function addPromptRow(val = '') {
@@ -601,19 +676,35 @@
 
         function closeModal(id) { document.getElementById(id).classList.add('hide', 'hidden'); }
 
+        // --- 保存逻辑 (兼容新建与编辑) ---
         function savePValue() {
             const pvalue = document.getElementById('p-input-val').value.trim();
             if (!pvalue) return showToast('P值不能为空！');
             
             const db = state.pvalue;
             const imgSrc = document.getElementById('p-preview-image').src;
-            db.items.unshift({
-                id: 'p_' + Date.now().toString(),
-                pvalue: pvalue,
-                desc: document.getElementById('p-input-desc').value.trim(),
-                category: document.getElementById('p-input-category').value,
-                image: imgSrc.startsWith('data:image') ? imgSrc : null
-            });
+            const finalImage = imgSrc.startsWith('data:image') ? imgSrc : null;
+
+            if (editingId) {
+                // 更新现有项
+                const item = db.items.find(i => i.id === editingId);
+                if (item) {
+                    item.pvalue = pvalue;
+                    item.desc = document.getElementById('p-input-desc').value.trim();
+                    item.category = document.getElementById('p-input-category').value;
+                    item.image = finalImage;
+                }
+            } else {
+                // 创建新项
+                db.items.unshift({
+                    id: 'p_' + Date.now().toString(),
+                    pvalue: pvalue,
+                    desc: document.getElementById('p-input-desc').value.trim(),
+                    category: document.getElementById('p-input-category').value,
+                    image: finalImage
+                });
+            }
+            
             afterSave(db, document.getElementById('p-input-category').value, 'modal-add-pvalue');
         }
 
@@ -630,19 +721,37 @@
 
             const db = state.prompt;
             const imgSrc = document.getElementById('prompt-preview-image').src;
-            db.items.unshift({
-                id: 'pr_' + Date.now().toString(),
-                name: name,
-                category: document.getElementById('prompt-input-category').value,
-                image: imgSrc.startsWith('data:image') ? imgSrc : null,
-                prompts: prompts
-            });
+            const finalImage = imgSrc.startsWith('data:image') ? imgSrc : null;
+
+            if (editingId) {
+                // 更新现有项
+                const item = db.items.find(i => i.id === editingId);
+                if (item) {
+                    item.name = name;
+                    item.category = document.getElementById('prompt-input-category').value;
+                    item.image = finalImage;
+                    item.prompts = prompts;
+                }
+            } else {
+                // 创建新项
+                db.items.unshift({
+                    id: 'pr_' + Date.now().toString(),
+                    name: name,
+                    category: document.getElementById('prompt-input-category').value,
+                    image: finalImage,
+                    prompts: prompts
+                });
+            }
+            
             afterSave(db, document.getElementById('prompt-input-category').value, 'modal-add-prompt');
         }
 
         function afterSave(db, category, modalId) {
             saveData();
             closeModal(modalId);
+            editingId = null; // 重置编辑状态
+            
+            // 如果更改了分类，自动跳转到该分类下
             if(db.currentCategory !== '全部' && db.currentCategory !== category) {
                 db.currentCategory = category;
                 document.getElementById('current-category-title').innerText = category;
@@ -651,6 +760,7 @@
             showToast('保存成功！');
         }
 
+        // --- 其他交互逻辑 ---
         function openViewPromptModal(item) {
             currentViewingPrompts = item.prompts || [];
             const imgEl = document.getElementById('view-prompt-img');
@@ -687,7 +797,6 @@
         }
 
         function copyToClipboard(text, successMsg = null) {
-            // 创建一个临时的文本框用于复制，兼容更多浏览器
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';

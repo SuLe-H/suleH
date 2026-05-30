@@ -30,16 +30,17 @@
         .btn-hover { transition: all 0.2s; cursor: pointer; }
         .btn-hover:active { transform: scale(0.95); }
 
-        /* 手机框架UI - 还原原有的纯黑厚重边框 */
+        /* 手机框架UI */
         .phone-frame {
             width: 360px; height: 740px; background: #f3f4f6; border-radius: 40px;
             box-shadow: 0 0 0 10px #1f2937, 0 20px 40px rgba(0,0,0,0.4);
-            position: relative; overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s;
+            position: relative; overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s ease;
         }
-        /* 全屏无边框模式样式 */
+        /* 全屏无边框模式附加样式 */
         .phone-frame.is-fullscreen {
-            width: 100% !important; height: 100% !important; border-radius: 0 !important; box-shadow: none !important;
+            width: 100%; height: 100%; border-radius: 0; box-shadow: none;
         }
+        .phone-frame.is-fullscreen .phone-notch { display: none !important; }
 
         .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background: #1f2937; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 50;}
         .phone-content { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
@@ -49,39 +50,39 @@
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* 移动后的退出按钮：左侧中间小拉环 */
         .tiny-exit-btn {
-            position: fixed; bottom: 120px; left: 12px; width: 32px; height: 32px; 
-            background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); border-radius: 50%;
+            position: fixed; top: 50%; left: 0; width: 24px; height: 48px; transform: translateY(-50%);
+            background: rgba(0,0,0,0.25); backdrop-filter: blur(4px); border-radius: 0 12px 12px 0;
             display: flex; align-items: center; justify-content: center; z-index: 100;
-            color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.2); border-left: none;
         }
-        .tiny-exit-btn:hover { background: rgba(0,0,0,0.6); color: white; transform: scale(1.1); }
+        .tiny-exit-btn:hover { background: rgba(0,0,0,0.5); color: white; padding-left: 4px; width: 28px; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden relative">
 
-    <!-- 遮罩层提升层级到 190 -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-[190] hide md:hidden backdrop-blur-sm" onclick="closeSidebar()"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hidden md:hidden backdrop-blur-sm" onclick="closeSidebar()"></div>
 
-    <!-- 侧边栏提升层级到 200，并改为 fixed 确保盖住所有内容 -->
-    <aside id="sidebar" class="w-64 glass flex flex-col h-full z-[200] fixed md:relative top-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300">
         <div class="p-4 border-b border-white/30 flex flex-col gap-3">
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-800 drop-shadow-sm">超级终端</h1>
-                <button class="md:hidden text-slate-700 btn-hover" onclick="closeSidebar()">
+                <button class="md:hidden text-slate-700 btn-hover z-50" onclick="closeSidebar()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <!-- 导航菜单 -->
             <div class="space-y-1">
                 <button onclick="switchMode('pvalue')" id="nav-pvalue" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> P值库</button>
-                <button onclick="switchMode('prompt')" id="nav-prompt" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 词包库</button>
+                <button onclick="switchMode('prompt')" id="nav-prompt" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 词包库</button>
                 <button onclick="switchMode('theater')" id="nav-theater" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg> Mufy小剧场</button>
                 <button onclick="switchMode('web')" id="nav-web" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg> 网页预览</button>
                 <button onclick="switchMode('phone')" id="nav-phone" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> 虚拟手机</button>
             </div>
         </div>
-        <div class="p-3 flex-1 overflow-y-auto" id="category-area">
+        <div class="p-3 flex-1 overflow-y-auto z-40" id="category-area">
             <div id="category-list"></div>
         </div>
         <div class="p-4 border-t border-white/30" id="add-cat-area">
@@ -93,9 +94,9 @@
 
     <!-- 主内容区 -->
     <main class="flex-1 flex flex-col h-full relative z-10">
-        <!-- 顶部极小退出按钮 -->
+        <!-- 退回到选择界面按钮 (移到左侧垂直居中) -->
         <button id="phone-exit-btn" onclick="openSidebar()" class="tiny-exit-btn hide" title="唤出菜单">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
         </button>
 
         <header id="main-header" class="min-h-[4rem] md:h-20 py-3 md:py-0 glass flex flex-col md:flex-row items-start md:items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-0">
@@ -144,7 +145,7 @@
         </div>
     </div>
 
-    <!-- 查看详情弹窗 (阅读面板) -->
+    <!-- 独立还原：词包/小剧场 查看详情弹窗 (阅读面板) -->
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
@@ -181,13 +182,7 @@
                     <button onclick="closeModal('modal-iframe')" class="btn-hover p-1 text-slate-400 hover:text-red-500 rounded"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 </div>
             </div>
-            <!-- 防空白温馨提示 -->
-            <div class="absolute inset-x-0 top-12 bottom-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 z-0 pointer-events-none">
-                <svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                <p>网页正在加载...</p>
-                <p class="text-xs mt-2 max-w-xs">如果长时间显示空白，说明该网站开启了“防嵌套保护”（如百度、B站等），请点击右上角的【新标签页】打开。</p>
-            </div>
-            <iframe id="preview-iframe" class="flex-1 w-full bg-transparent border-0 z-10 relative"></iframe>
+            <iframe id="preview-iframe" class="flex-1 w-full bg-white border-0"></iframe>
         </div>
     </div>
 
@@ -235,7 +230,7 @@
                 userPersona: '',
                 characters: [{id: 'char_1', name: 'AI助手', avatar: '', persona: '你是一个乐于助人的智能助手。', customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000}],
                 chats: { 'char_1': [] },
-                settings: { fullScreenMode: false }, 
+                settings: { fullScreen: false }, // 新增全屏无边框控制
                 theme: { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' },
                 diaries: []
             }
@@ -257,8 +252,8 @@
                     state = { ...state, ...parsed };
                     if(!state.phone.theme) state.phone.theme = { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' };
                     if(!state.phone.diaries) state.phone.diaries = [];
-                    if(!state.phone.settings) state.phone.settings = { fullScreenMode: false };
-                    if(state.phone.settings.fullScreenMode === undefined) state.phone.settings.fullScreenMode = false;
+                    if(!state.phone.settings) state.phone.settings = { fullScreen: false };
+                    if(state.phone.settings.fullScreen === undefined) state.phone.settings.fullScreen = false;
                     state.phone.characters = state.phone.characters.map(c => ({ 
                         customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000, ...c 
                     }));
@@ -290,10 +285,23 @@
                     }
                 });
             }
+            applyPhoneFullScreen();
             switchMode(state.mode);
         }
 
         function saveData() { try { localStorage.setItem('mj_super_terminal', JSON.stringify(state)); } catch(e){} }
+
+        function applyPhoneFullScreen() {
+            const container = document.getElementById('phone-app-container');
+            const root = document.getElementById('phone-root');
+            if(state.phone.settings.fullScreen) {
+                container.classList.remove('p-4');
+                root.classList.add('is-fullscreen');
+            } else {
+                container.classList.add('p-4');
+                root.classList.remove('is-fullscreen');
+            }
+        }
 
         function switchMode(newMode) {
             state.mode = newMode;
@@ -314,6 +322,7 @@
                 mainHeader.classList.add('hide'); gridContainer.classList.add('hide'); catArea.classList.add('hide'); addCatArea.classList.add('hide');
                 phoneContainer.classList.remove('hide'); phoneContainer.classList.add('flex');
                 exitBtn.classList.remove('hide'); 
+                applyPhoneFullScreen();
                 renderPhone();
                 closeSidebar(); 
             } else {
@@ -529,6 +538,7 @@
             saveData(); closeModal('modal-universal'); render(); showToast('已保存');
         }
 
+        // --- 独立还原：打开详细查看弹窗（带独立复制按钮） ---
         function openDetailView(item) {
             currentViewingPrompts = item.contentList || item.prompts || [];
             const imgEl = document.getElementById('view-prompt-img');
@@ -608,16 +618,6 @@
         // --- 虚拟手机系统 ---
         function renderPhone() {
             const root = document.getElementById('phone-root');
-            const container = document.getElementById('phone-app-container');
-            
-            if(state.phone.settings.fullScreenMode) {
-                root.classList.add('is-fullscreen');
-                container.classList.remove('p-4');
-            } else {
-                root.classList.remove('is-fullscreen');
-                container.classList.add('p-4');
-            }
-
             if(phoneUIState.screen === 'home') root.innerHTML = getPhoneHomeHtml();
             else if(phoneUIState.screen === 'contacts') root.innerHTML = getPhoneContactsHtml();
             else if(phoneUIState.screen === 'chat') root.innerHTML = getPhoneChatHtml(phoneUIState.activeCharId);
@@ -773,7 +773,10 @@
 
         function toggleCharOffline(charId) {
             const char = state.phone.characters.find(c=>c.id===charId);
-            if(char) { char.offlineEnabled = !char.offlineEnabled; saveData(); renderPhone(); }
+            if(char) {
+                char.offlineEnabled = !char.offlineEnabled;
+                saveData(); renderPhone();
+            }
         }
 
         function updateCharAvatar(inputEl, charId) {
@@ -970,33 +973,6 @@
             saveData(); renderPhone();
         }
 
-        async function fetchModels(e) {
-            const baseUrl = document.getElementById('set-baseurl').value.trim();
-            const key = document.getElementById('set-key').value.trim();
-            if(!baseUrl || !key) return alert('请先填写 Base URL 和 API Key');
-            
-            const btn = e.currentTarget;
-            const oldText = btn.innerText;
-            try {
-                btn.innerText = '拉取中...';
-                const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/models`, {
-                    headers: { 'Authorization': `Bearer ${key}` }
-                });
-                if(!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const models = data.data.map(m => m.id);
-                
-                const container = document.getElementById('model-select-container');
-                container.innerHTML = models.map(m => `<div class="p-1.5 hover:bg-slate-200 cursor-pointer rounded" onclick="document.getElementById('set-model').value='${m}'; document.getElementById('model-select-container').classList.add('hide');">${m}</div>`).join('');
-                container.classList.remove('hide');
-                showToast('模型拉取成功');
-            } catch(err) {
-                alert('拉取失败: ' + err.message);
-            } finally {
-                btn.innerText = oldText;
-            }
-        }
-
         async function triggerAIReply(charId) {
             const char = state.phone.characters.find(c=>c.id===charId);
             const offline = char.offlineEnabled;
@@ -1043,10 +1019,37 @@
             }
         }
 
-        function toggleFullScreenMode() {
-            state.phone.settings.fullScreenMode = !state.phone.settings.fullScreenMode;
-            saveData(); 
-            renderPhone(); 
+        async function fetchModels() {
+            const baseUrl = document.getElementById('set-baseurl').value.trim();
+            const key = document.getElementById('set-key').value.trim();
+            if(!baseUrl || !key) return alert('请先输入 Base URL 和 API Key');
+            
+            const btn = document.getElementById('fetch-model-btn');
+            btn.innerText = '拉取中...';
+            try {
+                const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/models`, {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                });
+                if(!res.ok) throw new Error('拉取失败');
+                const data = await res.json();
+                let models = [];
+                if(data.data && Array.isArray(data.data)) models = data.data.map(m => m.id);
+                if(models.length > 0) {
+                    const sel = document.getElementById('set-model-select');
+                    const inp = document.getElementById('set-model');
+                    sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+                    sel.classList.remove('hide', 'hidden');
+                    inp.classList.add('hide', 'hidden');
+                    if(models.includes(inp.value)) sel.value = inp.value;
+                } else { alert('未获取到模型列表'); }
+            } catch(e) {
+                alert('获取模型失败: ' + e.message);
+            } finally { btn.innerText = '拉取模型'; }
+        }
+
+        function toggleFullScreen() {
+            state.phone.settings.fullScreen = !state.phone.settings.fullScreen;
+            saveData(); applyPhoneFullScreen(); setPhoneScreen('settings'); 
         }
 
         function getPhoneSettingsHtml() {
@@ -1060,20 +1063,21 @@
                     <button onclick="savePhoneSettings()" class="text-blue-500 font-bold">保存</button>
                 </div>
                 <div class="phone-content bg-slate-50 p-4 space-y-4 pb-10">
-                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                        <h4 class="font-bold text-slate-800 border-b pb-1 flex justify-between items-center">
-                            全屏沉浸模式 (隐藏边框)
-                            <button onclick="toggleFullScreenMode()" class="px-2 py-0.5 rounded text-xs ${off.fullScreenMode?'bg-indigo-500 text-white':'bg-slate-200 text-slate-600'}">${off.fullScreenMode?'已开启':'已关闭'}</button>
-                        </h4>
-                        <p class="text-[10px] text-slate-400 mt-1">开启后将隐藏手机黑色边框，填满整个屏幕区域</p>
-                    </div>
-
                     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                         <button onclick="setPhoneScreen('settings_theme')" class="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition">
                             <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg></div><span class="font-bold text-slate-700">主题与美化</span></div>
                             <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
+
+                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                        <h4 class="font-bold text-slate-800 mb-2 border-b pb-1 flex justify-between items-center">
+                            手机全屏无边框
+                            <button onclick="toggleFullScreen()" class="px-2 py-0.5 rounded text-xs ${off.fullScreen?'bg-indigo-500 text-white':'bg-slate-200 text-slate-600'}">${off.fullScreen?'已开启':'已关闭'}</button>
+                        </h4>
+                        <p class="text-[10px] text-slate-400">开启后将去掉黑边框，完全铺满屏幕区域。</p>
+                    </div>
+
                     <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
                         <h4 class="font-bold text-slate-800 mb-2 border-b pb-1">API 设置</h4>
                         <label class="text-xs text-slate-500 block">Base URL</label>
@@ -1081,13 +1085,14 @@
                         <label class="text-xs text-slate-500 block">API Key</label>
                         <input type="password" id="set-key" class="w-full text-sm mb-2 focus:outline-none" value="${api.key}" placeholder="sk-...">
                         
-                        <div class="flex justify-between items-end mb-1 mt-1">
+                        <div class="flex items-center justify-between mb-1">
                             <label class="text-xs text-slate-500 block">模型</label>
-                            <button onclick="fetchModels(event)" class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">拉取列表</button>
+                            <button id="fetch-model-btn" onclick="fetchModels()" class="text-xs text-blue-500 font-bold bg-blue-50 px-2 py-0.5 rounded">拉取模型</button>
                         </div>
-                        <input type="text" id="set-model" class="w-full text-sm focus:outline-none border-b border-slate-100 pb-1" value="${api.model}">
-                        <div id="model-select-container" class="hide mt-1 max-h-32 overflow-y-auto bg-slate-50 rounded border border-slate-100 text-xs"></div>
+                        <input type="text" id="set-model" class="w-full text-sm focus:outline-none" value="${api.model}">
+                        <select id="set-model-select" class="w-full text-sm focus:outline-none hide py-1 bg-slate-50 rounded"></select>
                     </div>
+
                     <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
                         <h4 class="font-bold text-slate-800 mb-2 border-b pb-1">默认全局 User 人设</h4>
                         <textarea id="set-user" class="w-full text-sm h-20 focus:outline-none resize-none" placeholder="我是谁，我的名字是...">${state.phone.userPersona}</textarea>
@@ -1196,7 +1201,14 @@
         function savePhoneSettings() {
             state.phone.api.baseUrl = document.getElementById('set-baseurl').value.trim();
             state.phone.api.key = document.getElementById('set-key').value.trim();
-            state.phone.api.model = document.getElementById('set-model').value.trim();
+            
+            const sel = document.getElementById('set-model-select');
+            if(!sel.classList.contains('hide') && !sel.classList.contains('hidden')) {
+                state.phone.api.model = sel.value;
+            } else {
+                state.phone.api.model = document.getElementById('set-model').value.trim();
+            }
+
             state.phone.userPersona = document.getElementById('set-user').value.trim();
             saveData(); showToast('全局设置已保存'); setPhoneScreen('home');
         }

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Midjourney P值管理器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 SortableJS 实现拖拽 -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        /* 全局背景设置 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-image: url('https://a1.boltp.com/2026/03/08/69ac676d96837.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #1e293b;
+        }
+        
+        /* 隐藏滚动条但保留功能 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        .hide { display: none !important; }
+
+        /* 高级透明磨砂质感 - 侧边栏/顶栏/弹窗 */
+        .glass { 
+            background: rgba(255, 255, 255, 0.45); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* 磨砂质感卡片 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 卡片悬浮动效 */
+        .glass-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 24px 0 rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .card-image-container { height: 160px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); }
+        .card-image-container img { width: 100%; height: 100%; object-fit: cover; }
+        .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
+
+        /* 进场动画：由下向上浮现 */
+        @keyframes fadeSlideUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+
+        /* 弹窗缩放动画 */
+        @keyframes scaleIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .modal-animate { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* 交互按钮动画 */
+        .btn-hover { transition: all 0.2s; }
+        .btn-hover:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden relative">
+
+    <!-- 手机端侧边栏遮罩 -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hidden md:hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
+
+    <!-- 侧边栏：分类管理 -->
+    <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        <div class="p-5 md:p-6 border-b border-white/30 flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-700 drop-shadow-sm">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                P值库
+            </h1>
+            <button class="md:hidden text-slate-700 hover:text-indigo-600 p-1 btn-hover" onclick="toggleSidebar()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-3 md:p-4 flex-1 overflow-y-auto" id="category-list">
+            <!-- 分类列表动态生成 -->
+        </div>
+        <div class="p-4 border-t border-white/30">
+            <button onclick="addCategory()" class="btn-hover w-full py-2 px-4 bg-white/50 hover:bg-white/80 text-slate-800 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/50 shadow-sm backdrop-blur-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                新建分类
+            </button>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="flex-1 flex flex-col h-full relative min-w-0">
+        <!-- 顶部操作栏 -->
+        <header class="min-h-[4rem] md:h-20 py-3 md:py-0 glass flex flex-col md:flex-row items-start md:items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-0">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <button onclick="toggleSidebar()" class="btn-hover md:hidden text-slate-800 bg-white/30 hover:bg-white/60 p-1.5 rounded-lg border border-white/40 -ml-1 backdrop-blur-md">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h2 class="text-xl md:text-2xl font-bold flex-1 truncate drop-shadow-sm text-slate-800" id="current-category-title">全部</h2>
+            </div>
+            
+            <!-- 常规操作栏 -->
+            <div id="normal-action-bar" class="flex gap-2 md:gap-4 w-full md:w-auto justify-end">
+                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-2 text-sm md:text-base md:px-4 text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 flex items-center gap-1 md:gap-2 shadow-sm backdrop-blur-md font-medium">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    多选
+                </button>
+                <button onclick="openAddModal()" class="btn-hover px-3 py-2 text-sm md:text-base md:px-4 bg-indigo-600/90 text-white border border-indigo-400/50 rounded-xl hover:bg-indigo-600 flex items-center gap-1 md:gap-2 shadow-lg backdrop-blur-md font-medium whitespace-nowrap">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    添加 P 值
+                </button>
+            </div>
+
+            <!-- 多选操作栏 -->
+            <div id="bulk-action-bar" class="hide flex flex-wrap justify-end gap-2 items-center w-full md:w-auto">
+                <span class="text-xs md:text-sm text-slate-700 font-medium mr-1 md:mr-2 w-full text-right md:w-auto drop-shadow-sm" id="selected-count">已选择 0 项</span>
+                <button onclick="selectAll()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 backdrop-blur-md shadow-sm">全选</button>
+                <button onclick="bulkMove()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-blue-700 bg-blue-100/60 border border-blue-200/60 rounded-xl hover:bg-blue-100/90 flex items-center gap-1 backdrop-blur-md shadow-sm">
+                    <svg class="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>移动
+                </button>
+                <button onclick="bulkDelete()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-red-700 bg-red-100/60 border border-red-200/60 rounded-xl hover:bg-red-100/90 flex items-center gap-1 backdrop-blur-md shadow-sm">
+                    <svg class="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>删除
+                </button>
+                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 backdrop-blur-md shadow-sm">取消</button>
+            </div>
+        </header>
+
+        <!-- 卡片网格区 -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+            <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 md:gap-6 pb-20">
+                <!-- 卡片动态生成 -->
+            </div>
+            <!-- 空状态 -->
+            <div id="empty-state" class="hide flex flex-col items-center justify-center h-full text-slate-600 pb-20 drop-shadow-sm">
+                <div class="bg-white/30 p-6 rounded-full backdrop-blur-md border border-white/50 mb-4 shadow-sm">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <p class="font-medium text-lg">这里空空如也，添加一个 P 值吧</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 添加/编辑 弹窗 -->
+    <div id="modal-add" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add')"></div>
+        <div class="glass modal-animate rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-slate-800">保存 P 值</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">P 值代码</label>
+                    <input type="text" id="input-pvalue" placeholder="例如: 1a2b3c 或 --p 1a2b3c" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors placeholder-slate-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">备注/描述</label>
+                    <input type="text" id="input-desc" placeholder="例如: 赛博朋克风格" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors placeholder-slate-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">所属分类</label>
+                    <select id="input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors shadow-inner"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">参考图上传</label>
+                    <input type="file" id="input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:shadow-sm file:transition-colors file:cursor-pointer">
+                    <img id="preview-image" class="mt-3 h-32 w-full object-cover rounded-xl border border-white/50 hide shadow-sm">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('modal-add')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 border border-white/60 rounded-xl transition shadow-sm font-medium">取消</button>
+                <button onclick="saveItem()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white border border-indigo-400/50 rounded-xl hover:bg-indigo-600 transition shadow-md font-medium">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量移动弹窗 -->
+    <div id="modal-move" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-move')"></div>
+        <div class="glass modal-animate rounded-2xl w-full max-w-sm p-5 md:p-6 shadow-2xl relative border border-white/60">
+            <h3 class="text-xl font-bold mb-4 text-slate-800">移动到分类</h3>
+            <select id="move-category-select" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white focus:outline-none transition-colors shadow-inner"></select>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('modal-move')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 border border-white/60 rounded-xl transition shadow-sm font-medium">取消</button>
+                <button onclick="confirmMove()" class="btn-hover px-4 py-2 bg-blue-600/90 text-white border border-blue-400/50 rounded-xl hover:bg-blue-600 transition shadow-md font-medium">确认移动</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知提示 -->
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 text-sm md:text-base whitespace-nowrap border border-slate-700/50">
+        提示信息
+    </div>
+
+    <script>
+        let state = {
+            categories: ['默认分类'],
+            items: [], 
+            currentCategory: '全部',
+            selectMode: false,
+            selectedIds: new Set()
+        };
+
+        function init() {
+            const savedData = localStorage.getItem('mj_p_manager_data');
+            if (savedData) {
+                const parsed = JSON.parse(savedData);
+                state.categories = parsed.categories || ['默认分类'];
+                state.items = parsed.items || [];
+            }
+            
+            new Sortable(document.getElementById('item-grid'), {
+                animation: 250,
+                easing: "cubic-bezier(1, 0, 0, 1)",
+                delay: 200, 
+                delayOnTouchOnly: true,
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const gridItems = Array.from(document.querySelectorAll('.p-card'));
+                    const newOrder = gridItems.map(item => item.dataset.id);
+                    
+                    let newItems = [];
+                    const otherItems = state.items.filter(item => 
+                        state.currentCategory !== '全部' && item.category !== state.currentCategory
+                    );
+                    newOrder.forEach(id => {
+                        const found = state.items.find(i => i.id == id);
+                        if(found) newItems.push(found);
+                    });
+                    
+                    state.items = state.currentCategory === '全部' ? newItems : [...newItems, ...otherItems];
+                    saveData();
+                }
+            });
+
+            document.getElementById('input-image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.getElementById('preview-image');
+                        img.src = event.target.result;
+                        img.classList.remove('hide');
+                    };
+                    reader.readAsDataURL(file); 
+                }
+            });
+
+            render();
+        }
+
+        function saveData() {
+            localStorage.setItem('mj_p_manager_data', JSON.stringify({
+                categories: state.categories,
+                items: state.items
+            }));
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function render() {
+            renderCategories();
+            renderItems();
+            updateActionBar();
+        }
+
+        function renderCategories() {
+            const list = document.getElementById('category-list');
+            list.innerHTML = '';
+            list.appendChild(createCategoryNode('全部', state.currentCategory === '全部'));
+            state.categories.forEach(cat => {
+                list.appendChild(createCategoryNode(cat, state.currentCategory === cat));
+            });
+        }
+
+        function createCategoryNode(name, isActive) {
+            const div = document.createElement('div');
+            const activeClass = isActive ? 'bg-white/60 text-indigo-800 font-bold border-white/80 shadow-sm' : 'text-slate-700 hover:bg-white/40 border-transparent';
+            div.className = `flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer mb-2 transition-all duration-200 border ${activeClass}`;
+            div.onclick = () => {
+                state.currentCategory = name;
+                state.selectMode = false;
+                state.selectedIds.clear();
+                document.getElementById('current-category-title').innerText = name;
+                render();
+                if(window.innerWidth < 768) {
+                    toggleSidebar();
+                }
+            };
+
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-2 drop-shadow-sm';
+            left.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                <span>${name}</span>
+            `;
+            div.appendChild(left);
+
+            if (name !== '全部' && state.categories.length > 1) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50/50';
+                delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if(confirm(`确定删除分类 "${name}" 吗？该分类下的P值会被移至其他分类。`)) {
+                        state.categories = state.categories.filter(c => c !== name);
+                        const fallback = state.categories[0];
+                        state.items.forEach(item => { if(item.category === name) item.category = fallback; });
+                        if(state.currentCategory === name) {
+                            state.currentCategory = '全部';
+                            document.getElementById('current-category-title').innerText = '全部';
+                        }
+                        saveData();
+                        render();
+                    }
+                };
+                div.appendChild(delBtn);
+            }
+            return div;
+        }
+
+        function renderItems() {
+            const grid = document.getElementById('item-grid');
+            const empty = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            const filteredItems = state.currentCategory === '全部' 
+                ? state.items 
+                : state.items.filter(i => i.category === state.currentCategory);
+
+            if (filteredItems.length === 0) {
+                empty.classList.remove('hide');
+            } else {
+                empty.classList.add('hide');
+                filteredItems.forEach((item, index) => {
+                    grid.appendChild(createCardNode(item, index));
+                });
+            }
+        }
+
+        function createCardNode(item, index) {
+            const div = document.createElement('div');
+            // 添加毛玻璃卡片类和进场动画，计算动画延迟实现瀑布流浮现
+            div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`;
+            div.style.animationDelay = `${index * 40}ms`; // 动画级联延迟
+            div.dataset.id = item.id;
+
+            div.onclick = (e) => {
+                if(e.target.closest('.copy-btn')) return; 
+                if(state.selectMode) {
+                    if (state.selectedIds.has(item.id)) state.selectedIds.delete(item.id);
+                    else state.selectedIds.add(item.id);
+                    renderItems();
+                    updateActionBar();
+                }
+            };
+
+            const imgHtml = item.image 
+                ? `<img src="${item.image}" alt="ref">`
+                : `<svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
+
+            const checkboxHtml = state.selectMode ? `
+                <div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 ${state.selectedIds.has(item.id) ? 'bg-indigo-500 border-indigo-500 flex items-center justify-center' : 'bg-white/80 border-slate-300/80 backdrop-blur-md'} shadow-md transition-all">
+                    ${state.selectedIds.has(item.id) ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                </div>
+            ` : '';
+
+            const displayPValue = item.pvalue.startsWith('--p ') ? item.pvalue : `--p ${item.pvalue}`;
+
+            div.innerHTML = `
+                ${checkboxHtml}
+                <div class="card-image-container relative border-b border-white/30">
+                    ${imgHtml}
+                    <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-900/50 to-transparent pointer-events-none"></div>
+                    <span class="absolute bottom-2 left-3 text-white text-xs font-semibold bg-slate-900/40 px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 shadow-sm">${item.category}</span>
+                </div>
+                <div class="p-4 bg-gradient-to-b from-white/10 to-transparent">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono font-bold text-slate-800 truncate pr-2 text-lg drop-shadow-sm">${displayPValue}</span>
+                        <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="copyToClipboard('${displayPValue}')" title="复制">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-600 truncate font-medium drop-shadow-sm" title="${item.desc}">${item.desc || '暂无描述'}</p>
+                </div>
+            `;
+            return div;
+        }
+
+        function updateActionBar() {
+            const normalBar = document.getElementById('normal-action-bar');
+            const bulkBar = document.getElementById('bulk-action-bar');
+            
+            if (state.selectMode) {
+                normalBar.classList.add('hide');
+                bulkBar.classList.remove('hide');
+                document.getElementById('selected-count').innerText = `已选择 ${state.selectedIds.size} 项`;
+            } else {
+                normalBar.classList.remove('hide');
+                bulkBar.classList.add('hide');
+            }
+        }
+
+        function addCategory() {
+            const name = prompt("请输入新分类名称：");
+            if (name && name.trim() !== '') {
+                if (state.categories.includes(name) || name === '全部') {
+                    showToast('分类已存在！');
+                    return;
+                }
+                state.categories.push(name.trim());
+                saveData();
+                renderCategories();
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('input-pvalue').value = '';
+            document.getElementById('input-desc').value = '';
+            document.getElementById('input-image').value = '';
+            document.getElementById('preview-image').classList.add('hide');
+            document.getElementById('preview-image').src = '';
+            
+            const catSelect = document.getElementById('input-category');
+            catSelect.innerHTML = '';
+            state.categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                if(state.currentCategory === cat) opt.selected = true;
+                catSelect.appendChild(opt);
+            });
+
+            document.getElementById('modal-add').classList.remove('hide');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hide');
+        }
+
+        function saveItem() {
+            const pvalue = document.getElementById('input-pvalue').value.trim();
+            const desc = document.getElementById('input-desc').value.trim();
+            const category = document.getElementById('input-category').value;
+            const imgSrc = document.getElementById('preview-image').src;
+            const image = imgSrc.startsWith('data:image') ? imgSrc : null;
+
+            if (!pvalue) {
+                showToast('P值不能为空！');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now().toString(),
+                pvalue: pvalue,
+                desc: desc,
+                category: category,
+                image: image
+            };
+
+            state.items.unshift(newItem);
+            saveData();
+            closeModal('modal-add');
+            
+            if(state.currentCategory !== '全部' && state.currentCategory !== category) {
+                state.currentCategory = category;
+                document.getElementById('current-category-title').innerText = category;
+            }
+            render();
+            showToast('添加成功！');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('复制成功: ' + text);
+            }).catch(() => {
+                showToast('复制失败，请手动选择复制');
+            });
+        }
+
+        function toggleSelectMode() {
+            state.selectMode = !state.selectMode;
+            state.selectedIds.clear();
+            render();
+        }
+
+        function selectAll() {
+            const filteredItems = state.currentCategory === '全部' 
+                ? state.items 
+                : state.items.filter(i => i.category === state.currentCategory);
+            
+            if (state.selectedIds.size === filteredItems.length && filteredItems.length > 0) {
+                state.selectedIds.clear(); 
+            } else {
+                filteredItems.forEach(item => state.selectedIds.add(item.id));
+            }
+            renderItems();
+            updateActionBar();
+        }
+
+        function bulkDelete() {
+            if (state.selectedIds.size === 0) return showToast('请先选择项目');
+            if (confirm(`确定要删除选中的 ${state.selectedIds.size} 项吗？`)) {
+                state.items = state.items.filter(item => !state.selectedIds.has(item.id));
+                state.selectedIds.clear();
+                state.selectMode = false;
+                saveData();
+                render();
+                showToast('删除成功');
+            }
+        }
+
+        function bulkMove() {
+            if (state.selectedIds.size === 0) return showToast('请先选择项目');
+            const catSelect = document.getElementById('move-category-select');
+            catSelect.innerHTML = '';
+            state.categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                catSelect.appendChild(opt);
+            });
+            document.getElementById('modal-move').classList.remove('hide');
+        }
+
+        function confirmMove() {
+            const targetCategory = document.getElementById('move-category-select').value;
+            state.items.forEach(item => {
+                if (state.selectedIds.has(item.id)) {
+                    item.category = targetCategory;
+                }
+            });
+            state.selectedIds.clear();
+            state.selectMode = false;
+            saveData();
+            closeModal('modal-move');
+            render();
+            showToast('移动成功');
+        }
+
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('translate-y-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('translate-y-0');
+            }, 2500);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

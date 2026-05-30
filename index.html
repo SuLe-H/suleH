@@ -30,12 +30,17 @@
         .btn-hover { transition: all 0.2s; cursor: pointer; }
         .btn-hover:active { transform: scale(0.95); }
 
-        /* 手机框架UI - 已去除粗黑边框 */
+        /* 手机框架UI - 还原原有的纯黑厚重边框 */
         .phone-frame {
-            width: 360px; height: 740px; background: #f3f4f6; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            position: relative; overflow: hidden; display: flex; flex-direction: column;
+            width: 360px; height: 740px; background: #f3f4f6; border-radius: 40px;
+            box-shadow: 0 0 0 10px #1f2937, 0 20px 40px rgba(0,0,0,0.4);
+            position: relative; overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s;
         }
+        /* 新增：全屏无边框模式样式 */
+        .phone-frame.is-fullscreen {
+            width: 100% !important; height: 100% !important; border-radius: 0 !important; box-shadow: none !important;
+        }
+
         .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background: #1f2937; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 50;}
         .phone-content { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
         .bubble-left { background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937; border-radius: 16px 16px 16px 4px; padding: 10px 14px; max-width: 80%; width: fit-content; word-break: break-word; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; -webkit-user-select: none; cursor: pointer;}
@@ -44,7 +49,6 @@
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 极小退出按钮 - 位置下调到侧边中部偏下，防止与左上角返回误触 */
         .tiny-exit-btn {
             position: fixed; bottom: 120px; left: 12px; width: 32px; height: 32px; 
             background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); border-radius: 50%;
@@ -70,7 +74,7 @@
             <!-- 导航菜单 -->
             <div class="space-y-1">
                 <button onclick="switchMode('pvalue')" id="nav-pvalue" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> P值库</button>
-                <button onclick="switchMode('prompt')" id="nav-prompt" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 词包库</button>
+                <button onclick="switchMode('prompt')" id="nav-prompt" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg> 词包库</button>
                 <button onclick="switchMode('theater')" id="nav-theater" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg> Mufy小剧场</button>
                 <button onclick="switchMode('web')" id="nav-web" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg> 网页预览</button>
                 <button onclick="switchMode('phone')" id="nav-phone" class="nav-btn w-full text-left px-3 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> 虚拟手机</button>
@@ -88,7 +92,7 @@
 
     <!-- 主内容区 -->
     <main class="flex-1 flex flex-col h-full relative z-10">
-        <!-- 顶部极小退出按钮 (仅手机模式显示)，点击呼出侧边栏 (位置已优化) -->
+        <!-- 顶部极小退出按钮 -->
         <button id="phone-exit-btn" onclick="openSidebar()" class="tiny-exit-btn hide" title="唤出菜单">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
@@ -139,7 +143,7 @@
         </div>
     </div>
 
-    <!-- 独立还原：词包/小剧场 查看详情弹窗 (阅读面板) -->
+    <!-- 查看详情弹窗 (阅读面板) -->
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
@@ -224,6 +228,7 @@
                 userPersona: '',
                 characters: [{id: 'char_1', name: 'AI助手', avatar: '', persona: '你是一个乐于助人的智能助手。', customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000}],
                 chats: { 'char_1': [] },
+                settings: { fullScreenMode: false }, // 全屏无边框设置
                 theme: { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' },
                 diaries: []
             }
@@ -245,6 +250,8 @@
                     state = { ...state, ...parsed };
                     if(!state.phone.theme) state.phone.theme = { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' };
                     if(!state.phone.diaries) state.phone.diaries = [];
+                    if(!state.phone.settings) state.phone.settings = { fullScreenMode: false };
+                    if(state.phone.settings.fullScreenMode === undefined) state.phone.settings.fullScreenMode = false;
                     // 兼容旧数据角色结构
                     state.phone.characters = state.phone.characters.map(c => ({ 
                         customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000, ...c 
@@ -516,7 +523,6 @@
             saveData(); closeModal('modal-universal'); render(); showToast('已保存');
         }
 
-        // --- ★ 独立还原：打开详细查看弹窗（带独立复制按钮） ---
         function openDetailView(item) {
             currentViewingPrompts = item.contentList || item.prompts || [];
             const imgEl = document.getElementById('view-prompt-img');
@@ -596,6 +602,17 @@
         // --- 虚拟手机系统 ---
         function renderPhone() {
             const root = document.getElementById('phone-root');
+            const container = document.getElementById('phone-app-container');
+            
+            // 全屏无边框模式逻辑应用
+            if(state.phone.settings.fullScreenMode) {
+                root.classList.add('is-fullscreen');
+                container.classList.remove('p-4');
+            } else {
+                root.classList.remove('is-fullscreen');
+                container.classList.add('p-4');
+            }
+
             if(phoneUIState.screen === 'home') root.innerHTML = getPhoneHomeHtml();
             else if(phoneUIState.screen === 'contacts') root.innerHTML = getPhoneContactsHtml();
             else if(phoneUIState.screen === 'chat') root.innerHTML = getPhoneChatHtml(phoneUIState.activeCharId);
@@ -1025,8 +1042,16 @@
             }
         }
 
+        // 新增：全屏开关切换
+        function toggleFullScreenMode() {
+            state.phone.settings.fullScreenMode = !state.phone.settings.fullScreenMode;
+            saveData(); 
+            renderPhone(); 
+        }
+
         function getPhoneSettingsHtml() {
             const api = state.phone.api;
+            const off = state.phone.settings;
             return `
                 <div class="phone-notch"></div>
                 <div class="h-16 pt-5 px-4 bg-white flex items-center justify-between border-b shrink-0 z-40 relative">
@@ -1035,6 +1060,14 @@
                     <button onclick="savePhoneSettings()" class="text-blue-500 font-bold">保存</button>
                 </div>
                 <div class="phone-content bg-slate-50 p-4 space-y-4 pb-10">
+                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                        <h4 class="font-bold text-slate-800 border-b pb-1 flex justify-between items-center">
+                            全屏沉浸模式 (隐藏边框)
+                            <button onclick="toggleFullScreenMode()" class="px-2 py-0.5 rounded text-xs ${off.fullScreenMode?'bg-indigo-500 text-white':'bg-slate-200 text-slate-600'}">${off.fullScreenMode?'已开启':'已关闭'}</button>
+                        </h4>
+                        <p class="text-[10px] text-slate-400 mt-1">开启后将隐藏手机黑色边框，填满整个屏幕区域</p>
+                    </div>
+
                     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                         <button onclick="setPhoneScreen('settings_theme')" class="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition">
                             <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg></div><span class="font-bold text-slate-700">主题与美化</span></div>
@@ -1059,6 +1092,7 @@
                         <h4 class="font-bold text-slate-800 mb-2 border-b pb-1">默认全局 User 人设</h4>
                         <textarea id="set-user" class="w-full text-sm h-20 focus:outline-none resize-none" placeholder="我是谁，我的名字是...">${state.phone.userPersona}</textarea>
                     </div>
+                    
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="exportData()" class="py-2 bg-white text-indigo-600 font-bold rounded-xl shadow-sm border border-slate-100">导出系统全数据</button>
                         <button onclick="document.getElementById('import-file').click()" class="py-2 bg-white text-emerald-600 font-bold rounded-xl shadow-sm border border-slate-100">导入覆盖系统</button>

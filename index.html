@@ -122,7 +122,7 @@
         </div>
     </main>
 
-    <!-- 通用添加/编辑弹窗 -->
+    <!-- 通用添加/编辑弹窗 (保持原样) -->
     <div id="modal-universal" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('modal-universal')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
@@ -142,23 +142,29 @@
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
+            <!-- 顶部图片背景 -->
             <div class="h-40 bg-slate-200 relative w-full">
                 <img id="view-prompt-img" src="" class="w-full h-full object-cover hide">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div class="absolute bottom-4 left-5 right-5 flex justify-between items-end">
-                    <h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">名称</h3>
+                    <h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">词包名称</h3>
                     <span id="view-prompt-cat" class="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded backdrop-blur-md border border-white/30 whitespace-nowrap">分类</span>
                 </div>
                 <button onclick="closeModal('modal-view-prompt')" class="btn-hover absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition z-20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+            <!-- 内容列表 -->
             <div class="flex-1 overflow-y-auto p-5 bg-white/40">
-                <div id="view-prompt-list" class="space-y-3"></div>
+                <div id="view-prompt-list" class="space-y-3">
+                    <!-- 动态生成行内容和独立的复制按钮 -->
+                </div>
             </div>
+            <!-- 底部操作 -->
             <div class="p-4 border-t border-white/40 bg-white/50 backdrop-blur-md">
                 <button onclick="copyAllPrompts()" class="btn-hover w-full py-3 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-bold flex justify-center items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 一键复制全部内容
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 
+                    一键复制全部内容
                 </button>
             </div>
         </div>
@@ -221,8 +227,9 @@
             phone: {
                 api: { baseUrl: 'https://api.openai.com/v1', key: '', model: 'gpt-4o-mini' },
                 userPersona: '',
-                characters: [{id: 'char_1', name: 'AI助手', avatar: '', persona: '你是一个乐于助人的智能助手。', customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000}],
+                characters: [{id: 'char_1', name: 'AI助手', avatar: '', persona: '你是一个乐于助人的智能助手。', customUserPersona: '', chatBg: ''}],
                 chats: { 'char_1': [] },
+                settings: { offlineEnabled: false, offlineMin: 200, offlineMax: 5000 },
                 theme: { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' },
                 diaries: []
             }
@@ -230,11 +237,15 @@
 
         let editingId = null;
         let phoneUIState = { 
-            screen: 'home', activeCharId: null, chatSelectMode: false,
-            selectedChatIds: new Set(), quotingMsgId: null, contextMsgId: null 
+            screen: 'home', 
+            activeCharId: null,
+            chatSelectMode: false,
+            selectedChatIds: new Set(),
+            quotingMsgId: null,
+            contextMsgId: null 
         };
         
-        let currentViewingPrompts = [];
+        let currentViewingPrompts = []; // 用于存放当前查看看的词包内容
 
         function init() {
             try {
@@ -244,10 +255,7 @@
                     state = { ...state, ...parsed };
                     if(!state.phone.theme) state.phone.theme = { wallpaper: '', iconContacts: '', iconSettings: '', iconDiary: '' };
                     if(!state.phone.diaries) state.phone.diaries = [];
-                    // 兼容旧数据角色结构
-                    state.phone.characters = state.phone.characters.map(c => ({ 
-                        customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000, ...c 
-                    }));
+                    state.phone.characters = state.phone.characters.map(c => ({ customUserPersona: '', chatBg: '', ...c }));
                 }
             } catch(e) {}
 
@@ -671,7 +679,7 @@
         function createNewChar() {
             const newId = 'char_' + Date.now();
             state.phone.characters.push({
-                id: newId, name: '新建角色', avatar: '', persona: '', customUserPersona: '', chatBg: '', offlineEnabled: false, offlineMin: 200, offlineMax: 5000
+                id: newId, name: '新建角色', avatar: '', persona: '', customUserPersona: '', chatBg: ''
             });
             state.phone.chats[newId] = [];
             saveData();
@@ -712,17 +720,6 @@
                         <textarea id="pc-userpersona" class="w-full text-sm focus:outline-none resize-none h-16" placeholder="选填。留空则使用全局设置中的User人设...">${char.customUserPersona || ''}</textarea>
                     </div>
 
-                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                        <h4 class="font-bold text-slate-800 mb-2 border-b pb-1 flex justify-between items-center">
-                            单机/长文模式
-                            <button onclick="toggleCharOffline('${charId}')" class="px-2 py-0.5 rounded text-xs ${char.offlineEnabled?'bg-indigo-500 text-white':'bg-slate-200 text-slate-600'}">${char.offlineEnabled?'已开启':'已关闭'}</button>
-                        </h4>
-                        <div class="flex gap-2 ${char.offlineEnabled?'':'opacity-50 pointer-events-none'}">
-                            <div class="flex-1"><label class="text-xs text-slate-500 block">最少字数</label><input type="number" id="pc-off-min" class="w-full text-sm focus:outline-none" value="${char.offlineMin || 200}"></div>
-                            <div class="flex-1"><label class="text-xs text-slate-500 block">最多字数</label><input type="number" id="pc-off-max" class="w-full text-sm focus:outline-none" value="${char.offlineMax || 5000}"></div>
-                        </div>
-                    </div>
-
                     <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                         <h4 class="text-xs font-bold text-slate-500 mb-2">专属聊天背景</h4>
                         <div class="flex items-center gap-3">
@@ -746,15 +743,6 @@
                     <button onclick="deletePhoneChar('${charId}')" class="w-full py-3 bg-white text-red-500 font-bold rounded-xl shadow-sm border border-slate-100 mt-2">删除联系人及记录</button>
                 </div>
             `;
-        }
-
-        function toggleCharOffline(charId) {
-            const char = state.phone.characters.find(c=>c.id===charId);
-            if(char) {
-                char.offlineEnabled = !char.offlineEnabled;
-                saveData();
-                renderPhone();
-            }
         }
 
         function updateCharAvatar(inputEl, charId) {
@@ -781,8 +769,6 @@
                 char.name = name;
                 char.persona = document.getElementById('pc-persona').value.trim();
                 char.customUserPersona = document.getElementById('pc-userpersona').value.trim();
-                char.offlineMin = parseInt(document.getElementById('pc-off-min').value) || 200;
-                char.offlineMax = parseInt(document.getElementById('pc-off-max').value) || 5000;
                 saveData();
                 setPhoneScreen('chat', id);
             }
@@ -916,7 +902,6 @@
 
             const bgStyle = char.chatBg ? `background-image: url('${char.chatBg}'); background-size: cover; background-position: center;` : '';
             const bgClass = char.chatBg ? '' : 'bg-slate-50';
-            const offline = char.offlineEnabled;
 
             return `
                 <div class="phone-notch"></div>
@@ -926,7 +911,6 @@
                     <button class="text-slate-400 w-10 flex justify-end" onclick="setPhoneScreen('chat_settings', '${charId}')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
                 </div>
                 <div id="phone-chat-area" class="phone-content ${bgClass} p-4 pb-[80px]" style="${bgStyle}">
-                    ${offline ? `<div class="text-center text-xs text-slate-400 mb-4 bg-white/50 backdrop-blur rounded-full py-1 w-max mx-auto px-3">当前为单机/长文模式</div>` : ''}
                     ${bubbles}
                     <div id="chat-loading" class="hide flex justify-start mb-3"><div class="bubble-left flex items-center gap-2"><div class="loader"></div> 正在输入...</div></div>
                 </div>
@@ -953,7 +937,7 @@
 
         async function triggerAIReply(charId) {
             const char = state.phone.characters.find(c=>c.id===charId);
-            const offline = char.offlineEnabled;
+            const offline = state.phone.settings.offlineEnabled;
             const api = state.phone.api;
             
             if(!api.key) return alert('请先在全局设置中填写 API Key');
@@ -965,7 +949,7 @@
             const activeUserPersona = char.customUserPersona || state.phone.userPersona || '无特定设定，正常对待即可';
 
             let sysPrompt = `你的角色设定：\n${char.persona}\n\n当前用户的设定：\n${activeUserPersona}\n\n`;
-            if(offline) sysPrompt += `【强制系统规则：线下长文模式】\n你必须只回复1条完整的消息，绝对不要切分。你的回复字数必须在 ${char.offlineMin || 200} 到 ${char.offlineMax || 5000} 字之间。不要使用任何分隔符。`;
+            if(offline) sysPrompt += `【强制系统规则：线下长文模式】\n你必须只回复1条完整的消息，绝对不要切分。你的回复字数必须在 ${state.phone.settings.offlineMin} 到 ${state.phone.settings.offlineMax} 字之间。不要使用任何分隔符。`;
             else sysPrompt += `【强制系统规则：真实聊天模式】\n你需要把回复拆分成 1 到 5 条短消息，模拟真实人类的断句聊天节奏。绝对不要把所有话放在一个长段落里！\n你必须使用特殊符号 \`|||\` 来分隔你的每条气泡消息。\n例如：你好呀！|||今天天气真不错，要一起出去玩吗？|||等你回复哦。`;
 
             const safeHistory = (state.phone.chats[charId] || []).map(m => ({role: m.role, content: m.content}));
@@ -986,9 +970,7 @@
 
                 bubbles.forEach((b, i) => {
                     state.phone.chats[charId].push({
-                        id: 'msg_ai_'+Date.now()+'_'+i,
-                        role: 'assistant', 
-                        content: b
+                        id: 'msg_ai_'+Date.now()+'_'+i, role: 'assistant', content: b
                     });
                 });
                 saveData(); renderPhone();
@@ -997,9 +979,9 @@
             }
         }
 
-
         function getPhoneSettingsHtml() {
             const api = state.phone.api;
+            const off = state.phone.settings;
             return `
                 <div class="phone-notch"></div>
                 <div class="h-16 pt-5 px-4 bg-white flex items-center justify-between border-b shrink-0 z-40 relative">
@@ -1026,6 +1008,16 @@
                     <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
                         <h4 class="font-bold text-slate-800 mb-2 border-b pb-1">默认全局 User 人设</h4>
                         <textarea id="set-user" class="w-full text-sm h-20 focus:outline-none resize-none" placeholder="我是谁，我的名字是...">${state.phone.userPersona}</textarea>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                        <h4 class="font-bold text-slate-800 mb-2 border-b pb-1 flex justify-between items-center">
+                            线下模式设置
+                            <button onclick="toggleOfflineMode()" class="px-2 py-0.5 rounded text-xs ${off.offlineEnabled?'bg-indigo-500 text-white':'bg-slate-200 text-slate-600'}">${off.offlineEnabled?'已开启':'已关闭'}</button>
+                        </h4>
+                        <div class="flex gap-2">
+                            <div class="flex-1"><label class="text-xs text-slate-500 block">最少字数</label><input type="number" id="set-min" class="w-full text-sm focus:outline-none" value="${off.offlineMin}"></div>
+                            <div class="flex-1"><label class="text-xs text-slate-500 block">最多字数</label><input type="number" id="set-max" class="w-full text-sm focus:outline-none" value="${off.offlineMax}"></div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="exportData()" class="py-2 bg-white text-indigo-600 font-bold rounded-xl shadow-sm border border-slate-100">导出系统全数据</button>
@@ -1127,11 +1119,15 @@
             }
         }
 
+        function toggleOfflineMode() { state.phone.settings.offlineEnabled = !state.phone.settings.offlineEnabled; saveData(); renderPhone(); }
+
         function savePhoneSettings() {
             state.phone.api.baseUrl = document.getElementById('set-baseurl').value.trim();
             state.phone.api.key = document.getElementById('set-key').value.trim();
             state.phone.api.model = document.getElementById('set-model').value.trim();
             state.phone.userPersona = document.getElementById('set-user').value.trim();
+            state.phone.settings.offlineMin = parseInt(document.getElementById('set-min').value) || 200;
+            state.phone.settings.offlineMax = parseInt(document.getElementById('set-max').value) || 5000;
             saveData(); showToast('全局设置已保存'); setPhoneScreen('home');
         }
 
@@ -1224,7 +1220,7 @@
             document.body.appendChild(ta); ta.select();
             try { document.execCommand('copy'); showToast(successMsg || '复制成功'); } catch (err) {} finally { document.body.removeChild(ta); }
         }
-        function closeModal(id) { document.getElementById(id).classList.add('hide', 'hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hide'); }
         
         let toastTimeout;
         function showToast(msg) {

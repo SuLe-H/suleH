@@ -7,8 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* 核心防崩防闪 */
-        .hide, .hidden { display: none !important; }
+        .hide { display: none !important; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background-image: url('https://a1.boltp.com/2026/03/08/69ac676d96837.jpg');
@@ -35,7 +34,7 @@
 
         /* ====== 拼图排版引擎核心样式 ====== */
         .page-container { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
-        /* 尖角无圆角 */
+        /* 绝对尖角无圆角 */
         .collage-img-box { position: relative; overflow: hidden; background: #f1f5f9; border-radius: 0px !important; transition: border 0.2s, transform 0.2s;}
         .collage-img-box img.main-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; border-radius: 0px !important;}
         
@@ -50,15 +49,14 @@
         .wm-item.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.2); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); z-index: 50;}
         .wm-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         
-        /* 绝对精准定位与纯外描边防止吃字 */
-        .c-overlay-text { position: absolute; pointer-events: none; line-height: 1; z-index: 20; paint-order: stroke fill; }
+        /* 宋体、防止描边吃字 */
+        .c-overlay-text { position: absolute; font-family: 'SimSun', 'STSong', serif; pointer-events: none; line-height: 1; z-index: 20; paint-order: stroke fill; }
         .c-overlay-text.pos-tl { top: 6px; left: 8px; text-align: left; }
         .c-overlay-text.pos-tr { top: 6px; right: 8px; text-align: right; }
         .c-overlay-text.pos-bl { bottom: 6px; left: 8px; text-align: left; }
         .c-overlay-text.pos-br { bottom: 6px; right: 8px; text-align: right; }
         .c-overlay-text.pos-tc { top: 6px; left: 50%; transform: translateX(-50%); text-align: center; }
         .c-overlay-text.pos-bc { bottom: 6px; left: 50%; transform: translateX(-50%); text-align: center; }
-        
         .glow-text { text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 12px rgba(255,255,255,0.8); }
 
         /* --- 高级排版 --- */
@@ -83,7 +81,7 @@
         .layout-meitu12 { display: grid; grid-template-columns: repeat(10, 1fr); grid-auto-rows: auto; }
         .layout-meitu12 .collage-img-box:nth-child(-n+5) { grid-column: span 2; aspect-ratio: 3/4; }
         .layout-meitu12 .collage-img-box:nth-child(n+6):nth-child(-n+7) { grid-column: span 5; aspect-ratio: auto; }
-        .layout-meitu12 .collage-img-box:nth-child(n+6):nth-child(-n+7) img.main-img { position: static; object-fit: contain; } /* 中间两张原比例 */
+        .layout-meitu12 .collage-img-box:nth-child(n+6):nth-child(-n+7) img.main-img { position: static; object-fit: contain; } 
         .layout-meitu12 .collage-img-box:nth-child(n+8):nth-child(-n+12) { grid-column: span 2; aspect-ratio: 3/4; }
 
         .layout-masonry { display: flex; align-items: flex-start; }
@@ -99,7 +97,7 @@
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hide backdrop-blur-sm" onclick="closeSidebar()"></div>
 
-    <!-- 侧边栏 (强力锁定隐藏状态) -->
+    <!-- 侧边栏 -->
     <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div class="p-4 border-b border-white/30 flex flex-col gap-4">
             <div class="flex items-center justify-between">
@@ -110,7 +108,6 @@
             </div>
             
             <div class="flex flex-col gap-1">
-                <!-- SVG 全量恢复 -->
                 <button onclick="switchMode('pvalue')" id="tab-pvalue" class="nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> P值库
                 </button>
@@ -170,9 +167,7 @@
     <!-- 2. 数据管理区 -->
     <main id="main-data" class="hide flex-1 flex flex-col h-full relative min-w-0 z-10 glass bg-white/60">
         <header class="h-16 md:h-20 flex items-center px-4 md:px-8 border-b border-white/40 shrink-0">
-            <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-800 bg-white/40 p-1.5 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
+            <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-800 bg-white/40 p-1.5 rounded-lg"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
             <h2 class="text-xl md:text-2xl font-bold text-slate-800">数据管理</h2>
         </header>
         <div class="flex-1 flex items-center justify-center p-6">
@@ -193,9 +188,7 @@
     <main id="main-collage" class="hide flex-1 flex flex-col md:flex-row h-full relative min-w-0 z-10 glass bg-white/80">
         <div class="w-full md:w-[350px] border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 flex flex-col shrink-0 h-[45%] md:h-full">
             <div class="h-14 md:h-16 flex items-center px-4 border-b border-slate-200 bg-white/50 shrink-0">
-                <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-600 bg-slate-200 p-1.5 rounded">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
+                <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-600 bg-slate-200 p-1.5 rounded"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
                 <h2 class="font-bold text-slate-800">排版控制台</h2>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
@@ -211,7 +204,7 @@
                 <div class="bg-white p-3 rounded-xl border shadow-sm space-y-3">
                     <h4 class="font-bold text-slate-700 border-b pb-1">排版引擎</h4>
                     <select id="c-layout" class="w-full border rounded py-1.5 px-2 bg-slate-50 font-medium text-indigo-700 focus:outline-none" onchange="updateCollageSettings()">
-                        <option value="masonry">🌊 动态瀑布流 (不裁切, 原图比例)</option>
+                        <option value="masonry">🌊 动态瀑布流 (原图比例, 不裁剪)</option>
                         <option value="meitu12">✨ 12图海报拼图 (5-2-5 不规则)</option>
                         <option value="template">🧩 9宫格海报 (经典不规则拼接)</option>
                         <option value="grid">🔲 经典等比宫格 (整齐划一)</option>
@@ -221,7 +214,7 @@
                     <div id="setting-ratio" class="flex items-center justify-between hide">
                         <span class="text-slate-600">小图裁剪比例</span>
                         <select id="c-ratio" class="border rounded py-1 px-2 focus:outline-none text-xs" onchange="updateCollageSettings()">
-                            <option value="auto">原图自适应</option><option value="3/4">3:4 (竖图)</option><option value="1/1">1:1 (正方)</option><option value="9/16">9:16 (壁纸)</option>
+                            <option value="auto" selected>原图自适应</option><option value="3/4">3:4 (竖图)</option><option value="1/1">1:1 (正方)</option><option value="9/16">9:16 (壁纸)</option>
                         </select>
                     </div>
 
@@ -240,7 +233,7 @@
                     </div>
                 </div>
 
-                <!-- 参数叠加 (含颜色，使用宋体) -->
+                <!-- 参数叠加 -->
                 <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
                     <h4 class="font-bold text-slate-700 border-b pb-1">文字叠加颜色与位置</h4>
                     <div class="flex items-center gap-1 text-xs">
@@ -267,14 +260,14 @@
                     </div>
                 </div>
 
-                <!-- 浮动图章水印 -->
+                <!-- 全图水印 -->
                 <div class="bg-white p-3 rounded-xl border shadow-sm">
                     <div class="flex items-center justify-between border-b pb-1 mb-2">
                         <h4 class="font-bold text-slate-700">全图水印附着</h4>
                         <button onclick="document.getElementById('c-wm-upload').click()" class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">+ 导入图章</button>
                         <input type="file" id="c-wm-upload" accept="image/*" class="hide" onchange="uploadWatermarks(event)">
                     </div>
-                    <p class="text-[10px] text-slate-400 mb-2 leading-tight">每张图都会叠加此图章。直接在右侧任意图片上<strong class="text-indigo-500">点击你想安放的位置</strong>，即可全局同步坐标！</p>
+                    <p class="text-[10px] text-slate-400 mb-2 leading-tight">每张图都会叠加此图章。点击下方按钮后，直接在右侧任意图片上<strong class="text-indigo-500">点击你想安放的位置</strong>，即可全局同步坐标！</p>
                     <div id="wm-controls" class="space-y-3 hide">
                         <div class="flex justify-between items-center text-xs text-blue-700 bg-blue-50 p-1.5 rounded font-bold">
                             <span>控制选中的图章</span>
@@ -283,7 +276,6 @@
                         <div class="flex items-center gap-2"><span class="text-slate-600 text-xs w-8">大小</span><input type="range" id="wm-sz" min="5" max="150" value="30" class="flex-1" oninput="updateActiveWm()"></div>
                         <div class="flex items-center gap-2"><span class="text-slate-600 text-xs w-8">透明</span><input type="range" id="wm-op" min="0.1" max="1" step="0.05" value="0.8" class="flex-1" oninput="updateActiveWm()"></div>
                         
-                        <!-- 神级交互面板 -->
                         <div id="wm-move-mode" class="p-2 bg-indigo-50 rounded text-center border border-indigo-200 hide">
                             <p class="text-xs text-indigo-600 font-bold mb-2">👈 现在请在右侧任意图片上点击目标位置</p>
                             <button onclick="endWmPlacement()" class="w-full py-1.5 bg-indigo-500 text-white rounded text-sm font-bold shadow-sm">✅ 完成位置调整</button>
@@ -297,7 +289,6 @@
             </div>
         </div>
 
-        <!-- 右侧画布区 (按键左右分页) -->
         <div class="flex-1 bg-slate-200/50 overflow-hidden p-4 md:p-8 flex flex-col items-center gap-4 relative" id="collage-canvas-area">
             <!-- 分页按键 -->
             <div id="pagination-controls" class="hide flex items-center justify-center gap-4 w-full text-slate-700 font-bold z-20 mb-2 shrink-0">
@@ -319,7 +310,7 @@
         </div>
     </main>
 
-    <!-- 通用添加/编辑弹窗 -->
+    <!-- 通用弹窗 -->
     <div id="modal-universal" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('modal-universal')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
@@ -335,7 +326,7 @@
         </div>
     </div>
 
-    <!-- 详情阅读面板 (带分段独立复制) -->
+    <!-- 详情阅读面板 -->
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
@@ -368,8 +359,8 @@
 
         // 拼图专属状态
         let collageState = {
-            images: [], // {id, url, selected}
-            watermarks: [], // {id, url, x: px%, y: px%, w: sz%, opacity}
+            images: [], 
+            watermarks: [], 
             settings: { 
                 layout: 'masonry', ratio: 'auto', cols: 3, paginate: true, gap: 10, 
                 price: '3r', pricePos: 'br', priceSize: 24, priceColor: '#ffffff',
@@ -397,7 +388,7 @@
                 try {
                     new Sortable(document.getElementById('item-grid'), {
                         animation: 250, delay: 200, delayOnTouchOnly: true, ghostClass: 'sortable-ghost',
-                        onEnd: function (evt) {
+                        onEnd: function () {
                             if(state.mode !== 'pvalue' && state.mode !== 'prompt') return;
                             const gridItems = Array.from(document.querySelectorAll('.p-card'));
                             const newOrder = gridItems.map(item => item.dataset.id);
@@ -451,9 +442,7 @@
             if (items.length === 0) empty.classList.remove('hide'); 
             else { empty.classList.add('hide'); items.forEach((item, idx) => grid.appendChild(state.mode === 'pvalue' ? createPValueCard(item, idx) : createPromptCard(item, idx))); }
             
-            const nBar = document.getElementById('normal-action-bar'); const bBar = document.getElementById('bulk-action-bar');
-            if(state.selectMode){ nBar.classList.add('hide'); bBar.classList.remove('hide'); document.getElementById('selected-count').innerText=`已选择 ${state.selectedIds.size} 项`;}
-            else { nBar.classList.remove('hide'); bBar.classList.add('hide'); }
+            updateActionBar();
         }
 
         function createCatNode(name, isActive) {
@@ -477,7 +466,7 @@
             return div;
         }
 
-        // P值和词包的卡片
+        // P值和词包的卡片：确保多选时点击卡片全体都能选中
         function createPValueCard(item, index) {
             const div = document.createElement('div'); div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group flex flex-col h-full ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`; div.style.animationDelay = `${index * 30}ms`; div.dataset.id = item.id;
             
@@ -506,11 +495,21 @@
             const imgHtml = item.image ? `<img src="${item.image}" alt="ref">` : `<div class="h-full w-full bg-slate-100 flex items-center justify-center"><svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
             const chk = state.selectMode ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 pointer-events-none ${state.selectedIds.has(item.id) ? 'bg-indigo-500 border-indigo-500 flex items-center justify-center' : 'bg-white/80 border-slate-300'}">${state.selectedIds.has(item.id) ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}</div>` : '';
             const cCount = (item.contentList && item.contentList.length) ? item.contentList.length : (item.prompts?item.prompts.length:0);
-            div.innerHTML = `${chk}<div class="card-image-container relative border-b border-white/30 h-32 pointer-events-none">${imgHtml}<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none"></div><div class="absolute top-2 right-2 bg-indigo-600/90 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-md">${cCount} 条</div></div><div class="p-4 bg-gradient-to-b from-white/20 to-transparent flex-1 flex flex-col justify-between"><div class="mb-2"><h3 class="font-bold text-slate-800 text-lg truncate mb-1">${item.title||item.name||'未命名'}</h3><span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span></div><div class="flex justify-end z-20 relative"><button class="edit-btn btn-hover p-1 text-slate-400 hover:text-blue-600 bg-white/40 rounded-lg" onclick="openEditModal('${item.id}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button></div></div>`;
+            div.innerHTML = `${chk}<div class="card-image-container relative border-b border-white/30 h-32 pointer-events-none">${imgHtml}<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none"></div><div class="absolute top-2 right-2 bg-indigo-600/90 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-md">${cCount} 条</div></div><div class="p-4 bg-gradient-to-b from-white/20 to-transparent flex-1 flex flex-col justify-between"><div class="mb-2"><h3 class="font-bold text-slate-800 text-lg truncate mb-1">${item.title||item.name||'未命名'}</h3><span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span></div><div class="flex justify-end z-20 relative"><button class="edit-btn btn-hover p-1 text-slate-400 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-lg transition-all" onclick="openEditModal('${item.id}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button></div></div>`;
             return div;
         }
 
-        function toggleSelect(id) { if(state.selectedIds.has(id)) state.selectedIds.delete(id); else state.selectedIds.add(id); renderItems(); updateActionBar(); }
+        function toggleSelectMode() { state.selectMode = !state.selectMode; state.selectedIds.clear(); render(); }
+        function toggleSelect(id) { if(state.selectedIds.has(id)) state.selectedIds.delete(id); else state.selectedIds.add(id); render(); }
+        function selectAll() { const db = state[state.mode]; const it = db.currentCategory==='全部'?db.items:db.items.filter(i=>i.category===db.currentCategory); if(state.selectedIds.size===it.length && it.length>0) state.selectedIds.clear(); else it.forEach(i=>state.selectedIds.add(i.id)); render(); }
+        function bulkDelete() { if(state.selectedIds.size===0) return showToast('请先选择'); if(confirm('确定删除选中项？')) { const db = state[state.mode]; db.items = db.items.filter(i => !state.selectedIds.has(i.id)); state.selectedIds.clear(); state.selectMode=false; saveData(); render(); } }
+        function bulkMove() { if(state.selectedIds.size===0) return showToast('请先选择'); const s = document.getElementById('move-category-select'); s.innerHTML=''; state[state.mode].categories.forEach(c=>s.appendChild(new Option(c,c))); document.getElementById('modal-move').classList.remove('hide'); }
+        function confirmMove() { const t = document.getElementById('move-category-select').value; state[state.mode].items.forEach(i=>{if(state.selectedIds.has(i.id)) i.category=t;}); state.selectedIds.clear(); state.selectMode=false; saveData(); closeModal('modal-move'); render(); showToast('移动成功'); }
+        function updateActionBar() {
+            const nBar = document.getElementById('normal-action-bar'); const bBar = document.getElementById('bulk-action-bar');
+            if(state.selectMode){ nBar.classList.add('hide'); bBar.classList.remove('hide'); document.getElementById('selected-count').innerText=`已选择 ${state.selectedIds.size} 项`;}
+            else { nBar.classList.remove('hide'); bBar.classList.add('hide'); }
+        }
 
         function openAddModal() { editingId = null; buildForm(); }
         function openEditModal(id) { editingId = id; buildForm(id); }
@@ -575,17 +574,6 @@
             document.getElementById('modal-view-prompt').classList.remove('hide');
         }
         function copyAllPrompts() { if(currentViewingPrompts.length === 0) return; copyToClipboard(currentViewingPrompts.join('\n\n'), '已复制全部内容'); }
-
-        // 多选操作
-        function selectAll() { const db = state[state.mode]; const it = db.currentCategory==='全部'?db.items:db.items.filter(i=>i.category===db.currentCategory); if(state.selectedIds.size===it.length && it.length>0) state.selectedIds.clear(); else it.forEach(i=>state.selectedIds.add(i.id)); renderItems(); updateActionBar(); }
-        function bulkDelete() { if(state.selectedIds.size===0) return showToast('请先选择'); if(confirm('确定删除选中项？')) { const db = state[state.mode]; db.items = db.items.filter(i => !state.selectedIds.has(i.id)); state.selectedIds.clear(); state.selectMode=false; saveData(); render(); } }
-        function bulkMove() { if(state.selectedIds.size===0) return showToast('请先选择'); const s = document.getElementById('move-category-select'); s.innerHTML=''; state[state.mode].categories.forEach(c=>s.appendChild(new Option(c,c))); document.getElementById('modal-move').classList.remove('hide'); }
-        function confirmMove() { const t = document.getElementById('move-category-select').value; state[state.mode].items.forEach(i=>{if(state.selectedIds.has(i.id)) i.category=t;}); state.selectedIds.clear(); state.selectMode=false; saveData(); closeModal('modal-move'); render(); showToast('移动成功'); }
-        function updateActionBar() {
-            const nBar = document.getElementById('normal-action-bar'); const bBar = document.getElementById('bulk-action-bar');
-            if(state.selectMode){ nBar.classList.add('hide', 'hidden'); bBar.classList.remove('hide', 'hidden'); document.getElementById('selected-count').innerText=`已选择 ${state.selectedIds.size} 项`;}
-            else { nBar.classList.remove('hide', 'hidden'); bBar.classList.add('hide', 'hidden'); }
-        }
 
         // ---------- 2. 数据管理 ----------
         function exportData() {
@@ -700,7 +688,6 @@
                 
                 const grid = document.createElement('div'); grid.style.gap = `${s.gap}px`;
 
-                // 布局分支
                 if (s.layout === 'template') { 
                     grid.className = 'layout-template'; grid.dataset.count = Math.min(pageImgs.length, 9); 
                 } else if (s.layout === 'meitu12') {
@@ -737,13 +724,15 @@
             itemDiv.className = `collage-img-box ${ratioClass} ${collageState.swapTargetId === imgObj.id ? 'is-swap-target' : ''} ${imgObj.selected ? 'is-selected' : ''}`;
             itemDiv.dataset.id = imgObj.id;
             
+            // 点击图片核心：神级放置水印 / 交换位置
             itemDiv.onclick = (e) => {
                 e.stopPropagation(); 
                 if(collageState.wmPlacingMode && collageState.activeWmId) {
-                    const pageRect = itemDiv.closest('.page-container').getBoundingClientRect();
-                    const px = e.clientX - pageRect.left; const py = e.clientY - pageRect.top;
+                    const rect = itemDiv.getBoundingClientRect();
+                    const px = e.clientX - rect.left; const py = e.clientY - rect.top;
+                    const percentX = (px / rect.width)*100; const percentY = (py / rect.height)*100;
                     const wm = collageState.watermarks.find(w=>w.id===collageState.activeWmId);
-                    if(wm) { wm.x = (px / pageRect.width)*100; wm.y = (py / pageRect.height)*100; renderCollage(); }
+                    if(wm) { wm.x = percentX; wm.y = percentY; renderCollage(); }
                     return;
                 }
 
@@ -758,7 +747,7 @@
                 renderCollage();
             };
 
-            // ★ 独立的复选框 (只在非水印拖拽模式下显示)
+            // 独立的复选框 (左上角)
             const chk = document.createElement('div');
             chk.className = 'chk-overlay absolute top-2 left-2 w-6 h-6 rounded-full border-2 border-white bg-black/30 flex items-center justify-center text-white transition z-20 hover:bg-black/50 cursor-pointer pointer-events-auto';
             chk.innerHTML = imgObj.selected ? `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : '';
@@ -768,7 +757,7 @@
 
             itemDiv.appendChild(chk); itemDiv.appendChild(imgEl);
 
-            // ★ 水印渲染：在单张图里叠加全局水印。
+            // 水印渲染
             collageState.watermarks.forEach(wm => {
                 const wmDiv = document.createElement('div');
                 wmDiv.className = `wm-item ${collageState.activeWmId === wm.id ? 'active' : ''}`;
@@ -791,16 +780,9 @@
         // HTML 预览叠加 (纯外描边，宋体)
         function getOverlayHtml(s, seqNum) {
             let html = '';
-            // ★ 修改：加入 paint-order: stroke fill 和 宋体设置
-            const baseStyle = `font-family: 'SimSun', 'STSong', serif; font-weight: normal; paint-order: stroke fill;`;
             const strokeCss = s.seqStroke && s.seqStrokeWidth > 0 ? `-webkit-text-stroke: ${s.seqStrokeWidth}px ${s.seqStrokeColor};` : '';
-            
-            if(s.seqOn) {
-                html += `<div class="c-overlay-text pos-${s.seqPos} ${s.seqGlow?'glow-text':''}" style="${baseStyle} font-size: ${Math.max(12, s.seqSz/2)}px; color: ${s.seqColor}; ${strokeCss}">${seqNum}</div>`;
-            }
-            if(s.price) {
-                html += `<div class="c-overlay-text pos-${s.pricePos}" style="${baseStyle} font-size: ${Math.max(10, s.priceSz/2)}px; color: ${s.priceColor}; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${s.price}</div>`;
-            }
+            if(s.seqOn) html += `<div class="c-overlay-text pos-${s.seqPos} ${s.seqGlow?'glow-text':''}" style="font-size: ${Math.max(12, s.seqSz/2)}px; color: ${s.seqColor}; ${strokeCss}">${seqNum}</div>`;
+            if(s.price) html += `<div class="c-overlay-text pos-${s.pricePos}" style="font-size: ${Math.max(10, s.priceSz/2)}px; color: ${s.priceColor}; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${s.price}</div>`;
             return html;
         }
 
@@ -811,7 +793,7 @@
             collageState.images = collageState.images.filter(i=>!i.selected); collageState.swapTargetId = null; renderCollage();
         }
 
-        // --- 水印交互逻辑 ---
+        // --- 全局水印交互逻辑 ---
         function uploadWatermarks(e) {
             const files = e.target.files; if(!files || files.length === 0) return;
             Array.from(files).forEach(file => {
@@ -835,7 +817,6 @@
             const controls = document.getElementById('wm-controls');
             const startBtn = document.getElementById('wm-start-btn');
             const moveMode = document.getElementById('wm-move-mode');
-            const area = document.getElementById('collage-canvas-area');
 
             if(collageState.activeWmId) {
                 controls.classList.remove('hide');
@@ -843,12 +824,12 @@
                 if(wm) { document.getElementById('wm-sz').value = wm.w; document.getElementById('wm-op').value = wm.opacity; }
 
                 if(collageState.wmPlacingMode) {
-                    moveMode.classList.remove('hide'); startBtn.classList.add('hide'); area.classList.add('crosshair-mode');
+                    moveMode.classList.remove('hide'); startBtn.classList.add('hide');
                 } else {
-                    moveMode.classList.add('hide'); startBtn.classList.remove('hide'); area.classList.remove('crosshair-mode');
+                    moveMode.classList.add('hide'); startBtn.classList.remove('hide');
                 }
             } else { 
-                controls.classList.add('hide'); area.classList.remove('crosshair-mode'); 
+                controls.classList.add('hide');
             }
         }
 
@@ -947,15 +928,14 @@
             });
         }
 
-        // ★ 修改：精准数学坐标文字绘制，应用宋体
+        // 精准数学坐标文字绘制
         function drawCanvasText(ctx, text, pos, sz, scale, dx, dy, imgW, imgH, glow, stroke, strokeWidth, color, strokeColor) {
             if(!text) return;
             const fs = parseInt(sz) * scale;
-            // 采用宋体系列
             ctx.font = `${fs}px 'SimSun', 'STSong', serif`;
             
             const padX = 8 * scale;
-            const padY = 6 * scale;
+            const padY = 6 * scale; // 修复下边距
 
             let tx = dx;
             let ty = dy;
@@ -975,10 +955,10 @@
                 ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; 
             }
 
-            // 先描边后填充，彻底防止描边吃字
             if (stroke && strokeWidth > 0) {
                 ctx.strokeStyle = strokeColor || '#000000'; 
-                ctx.lineWidth = strokeWidth * scale * 2; // 因为 strokeText 居中，实际外观会减半，所以 *2
+                // 因为 Canvas strokeText 默认居中描边，导致字变细。所以加粗 lineWidth 并先 stroke 后 fill 完美解决吃字
+                ctx.lineWidth = strokeWidth * scale * 2; 
                 ctx.lineJoin = 'round';
                 ctx.strokeText(text, tx, ty);
             }

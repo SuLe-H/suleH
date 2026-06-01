@@ -3,861 +3,1008 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MJ 灵感管理器 (P值 & 词包)</title>
-    <!-- 引入外部资源 -->
+    <title>MJ 灵感管理器 & 拼图引擎</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* 防崩保障：写死隐藏类 */
+        /* 核心防崩防闪 */
         .hide, .hidden { display: none !important; }
-        
-        /* 全局与背景 */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background-image: url('https://a1.boltp.com/2026/03/08/69ac676d96837.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #1e293b;
+            background-size: cover; background-position: center; background-attachment: fixed; color: #1e293b;
         }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
 
-        /* 磨砂玻璃质感 */
-        .glass { 
-            background: rgba(255, 255, 255, 0.45); 
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            transform: translateY(-6px) scale(1.02); box-shadow: 0 12px 24px 0 rgba(0, 0, 0, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.75);
-        }
+        .glass { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-right: 1px solid rgba(255, 255, 255, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1); }
+        .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s ease; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px 0 rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.75); }
 
         .card-image-container { height: 160px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); }
         .card-image-container img { width: 100%; height: 100%; object-fit: cover; }
         .sortable-ghost { opacity: 0.3; transform: scale(0.95); }
 
-        /* 动画 */
-        @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        @keyframes scaleIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-        .modal-animate { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes scaleIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        .modal-animate { animation: scaleIn 0.2s ease forwards; }
+        .animate-fade-in { animation: fadeSlideUp 0.3s ease forwards; opacity: 0; }
         .btn-hover { transition: all 0.2s; cursor: pointer; }
         .btn-hover:active { transform: scale(0.95); }
+
+        /* ====== 拼图排版引擎核心样式 ====== */
+        .page-container { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        /* 尖角无圆角 */
+        .collage-img-box { position: relative; overflow: hidden; background: #f1f5f9; border-radius: 0px !important; transition: border 0.2s, transform 0.2s;}
+        .collage-img-box img.main-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; display: block; border-radius: 0px !important;}
+        
+        .collage-img-box.is-swap-target { border: 4px solid #4f46e5; transform: scale(0.95); filter: brightness(0.8); z-index: 10; box-shadow: 0 0 15px rgba(79,70,229,0.5);}
+        .collage-img-box.is-selected .chk-overlay { opacity: 1; background: rgba(79, 70, 229, 0.9); border-color: rgba(79, 70, 229, 0.9); }
+        
+        /* 准星模式(点击放置水印状态) */
+        .crosshair-mode .collage-img-box { cursor: crosshair !important; }
+        .crosshair-mode .chk-overlay { display: none !important; }
+
+        .wm-item { position: absolute; transform: translate(-50%, -50%); transition: all 0.2s; cursor: pointer; pointer-events: auto; border: 2px dashed transparent; }
+        .wm-item.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.2); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); z-index: 50;}
+        .wm-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        
+        /* 绝对精准定位与纯外描边防止吃字 */
+        .c-overlay-text { position: absolute; pointer-events: none; line-height: 1; z-index: 20; paint-order: stroke fill; }
+        .c-overlay-text.pos-tl { top: 6px; left: 8px; text-align: left; }
+        .c-overlay-text.pos-tr { top: 6px; right: 8px; text-align: right; }
+        .c-overlay-text.pos-bl { bottom: 6px; left: 8px; text-align: left; }
+        .c-overlay-text.pos-br { bottom: 6px; right: 8px; text-align: right; }
+        .c-overlay-text.pos-tc { top: 6px; left: 50%; transform: translateX(-50%); text-align: center; }
+        .c-overlay-text.pos-bc { bottom: 6px; left: 50%; transform: translateX(-50%); text-align: center; }
+        
+        .glow-text { text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 12px rgba(255,255,255,0.8); }
+
+        /* --- 高级排版 --- */
+        .layout-template { display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: auto; }
+        .layout-template .collage-img-box { aspect-ratio: 1/1; }
+        .layout-template[data-count="1"] .collage-img-box { grid-column: span 6; aspect-ratio: auto; }
+        .layout-template[data-count="2"] .collage-img-box { grid-column: span 3; aspect-ratio: 3/4; }
+        .layout-template[data-count="3"] .collage-img-box:nth-child(1) { grid-column: span 6; aspect-ratio: 16/9; }
+        .layout-template[data-count="3"] .collage-img-box:nth-child(n+2) { grid-column: span 3; aspect-ratio: 1/1; }
+        .layout-template[data-count="4"] .collage-img-box { grid-column: span 3; aspect-ratio: 1/1; }
+        .layout-template[data-count="5"] .collage-img-box:nth-child(-n+2) { grid-column: span 3; aspect-ratio: 4/3; }
+        .layout-template[data-count="5"] .collage-img-box:nth-child(n+3) { grid-column: span 2; aspect-ratio: 1/1; }
+        .layout-template[data-count="6"] .collage-img-box:nth-child(-n+2) { grid-column: span 3; aspect-ratio: 4/3; }
+        .layout-template[data-count="6"] .collage-img-box:nth-child(n+3) { grid-column: span 2; aspect-ratio: 1/1; }
+        .layout-template[data-count="7"] .collage-img-box:nth-child(1) { grid-column: span 6; aspect-ratio: 21/9; }
+        .layout-template[data-count="7"] .collage-img-box:nth-child(n+2) { grid-column: span 2; aspect-ratio: 1/1; }
+        .layout-template[data-count="8"] .collage-img-box:nth-child(-n+2) { grid-column: span 3; aspect-ratio: 1/1; }
+        .layout-template[data-count="8"] .collage-img-box:nth-child(n+3) { grid-column: span 2; aspect-ratio: 1/1; }
+        .layout-template[data-count="9"] .collage-img-box { grid-column: span 2; aspect-ratio: 1/1; }
+
+        /* --- ✨ 专属定制 12图 美图排版 (5 - 2 - 5) --- */
+        .layout-meitu12 { display: grid; grid-template-columns: repeat(10, 1fr); grid-auto-rows: auto; }
+        .layout-meitu12 .collage-img-box:nth-child(-n+5) { grid-column: span 2; aspect-ratio: 3/4; }
+        .layout-meitu12 .collage-img-box:nth-child(n+6):nth-child(-n+7) { grid-column: span 5; aspect-ratio: auto; }
+        .layout-meitu12 .collage-img-box:nth-child(n+6):nth-child(-n+7) img.main-img { position: static; object-fit: contain; } /* 中间两张原比例 */
+        .layout-meitu12 .collage-img-box:nth-child(n+8):nth-child(-n+12) { grid-column: span 2; aspect-ratio: 3/4; }
+
+        .layout-masonry { display: flex; align-items: flex-start; }
+        .masonry-col { flex: 1; display: flex; flex-direction: column; }
+        .layout-masonry .collage-img-box { width: 100%; height: auto !important; aspect-ratio: auto !important; }
+        .layout-masonry .collage-img-box img.main-img { position: static; height: auto; object-fit: contain; }
+        
+        .ratio-1-1 { aspect-ratio: 1/1; } .ratio-3-4 { aspect-ratio: 3/4; } .ratio-9-16 { aspect-ratio: 9/16; } .ratio-auto { height: auto; }
+        .ratio-auto img.main-img { height: auto; object-fit: contain; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden relative">
 
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hidden md:hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-20 hide backdrop-blur-sm" onclick="closeSidebar()"></div>
 
-    <!-- 侧边栏 -->
+    <!-- 侧边栏 (强力锁定隐藏状态) -->
     <aside id="sidebar" class="w-64 glass flex flex-col h-full z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div class="p-4 border-b border-white/30 flex flex-col gap-4">
             <div class="flex items-center justify-between">
-                <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-800 drop-shadow-sm">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    MJ 收藏库
-                </h1>
-                <button class="md:hidden text-slate-700 hover:text-indigo-600 p-1 btn-hover relative z-50" onclick="toggleSidebar()">
+                <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-800 drop-shadow-sm">管理中心</h1>
+                <button class="md:hidden text-slate-700 hover:text-indigo-600 p-1 btn-hover relative z-50" onclick="closeSidebar()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <!-- 模式切换器 -->
-            <div class="flex p-1 bg-white/30 rounded-xl border border-white/50 backdrop-blur-md shadow-inner">
-                <button onclick="switchMode('pvalue')" id="tab-pvalue" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40">P值库</button>
-                <button onclick="switchMode('prompt')" id="tab-prompt" class="flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40">词包库</button>
+            
+            <div class="flex flex-col gap-1">
+                <!-- SVG 全量恢复 -->
+                <button onclick="switchMode('pvalue')" id="tab-pvalue" class="nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> P值库
+                </button>
+                <button onclick="switchMode('prompt')" id="tab-prompt" class="nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 词包库
+                </button>
+                <div class="h-px bg-white/40 my-1"></div>
+                <button onclick="switchMode('collage')" id="tab-collage" class="nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> 拼图排版
+                </button>
+                <button onclick="switchMode('data')" id="tab-data" class="nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> 数据管理
+                </button>
             </div>
         </div>
         <div class="p-3 md:p-4 flex-1 overflow-y-auto relative z-40" id="category-list"></div>
-        <div class="p-4 border-t border-white/30">
-            <button onclick="addCategory()" class="btn-hover w-full py-2 px-4 bg-white/50 hover:bg-white/80 text-slate-800 font-medium rounded-xl flex items-center justify-center gap-2 border border-white/50 shadow-sm backdrop-blur-md relative z-40">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                新建分类
+        <div class="p-4 border-t border-white/30" id="category-add-btn">
+            <button onclick="addCategory()" class="btn-hover w-full py-2 px-4 bg-white/50 hover:bg-white/80 text-slate-800 font-medium rounded-xl flex items-center justify-center gap-2 shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 新建分类
             </button>
         </div>
     </aside>
 
-    <!-- 主内容区 -->
-    <main class="flex-1 flex flex-col h-full relative min-w-0 z-10">
+    <!-- 1. 主库区 (P值/词包) -->
+    <main id="main-library" class="flex-1 flex flex-col h-full relative min-w-0 z-10">
         <header class="min-h-[4rem] md:h-20 py-3 md:py-0 glass flex flex-col md:flex-row items-start md:items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-0">
             <div class="flex items-center gap-3 w-full md:w-auto">
-                <button onclick="toggleSidebar()" class="btn-hover md:hidden text-slate-800 bg-white/30 hover:bg-white/60 p-1.5 rounded-lg border border-white/40 -ml-1 backdrop-blur-md relative z-50">
+                <button onclick="openSidebar()" class="btn-hover md:hidden text-slate-800 bg-white/30 p-1.5 rounded-lg border border-white/40 -ml-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
                 <h2 class="text-xl md:text-2xl font-bold flex-1 truncate drop-shadow-sm text-slate-800" id="current-category-title">全部</h2>
             </div>
             
-            <div id="normal-action-bar" class="flex gap-2 md:gap-4 w-full md:w-auto justify-end relative z-40">
-                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-2 text-sm md:text-base md:px-4 text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 flex items-center gap-1 md:gap-2 shadow-sm backdrop-blur-md font-medium">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    多选
-                </button>
-                <button onclick="openAddModal()" class="btn-hover px-3 py-2 text-sm md:text-base md:px-4 bg-indigo-600/90 text-white border border-indigo-400/50 rounded-xl hover:bg-indigo-600 flex items-center gap-1 md:gap-2 shadow-lg backdrop-blur-md font-medium whitespace-nowrap" id="btn-add-main">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    添加内容
-                </button>
+            <div id="normal-action-bar" class="flex gap-2 w-full md:w-auto justify-end relative z-40">
+                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-2 text-sm bg-white/50 rounded-xl font-medium shadow-sm border border-slate-200">多选操作</button>
+                <button onclick="openAddModal()" class="btn-hover px-3 py-2 text-sm bg-indigo-600/90 text-white rounded-xl font-medium shadow-lg" id="btn-add-main">添加内容</button>
             </div>
 
             <div id="bulk-action-bar" class="hide flex flex-wrap justify-end gap-2 items-center w-full md:w-auto relative z-40">
-                <span class="text-xs md:text-sm text-slate-700 font-medium mr-1 md:mr-2 w-full text-right md:w-auto drop-shadow-sm" id="selected-count">已选择 0 项</span>
-                <button onclick="selectAll()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 backdrop-blur-md shadow-sm">全选</button>
-                <button onclick="bulkMove()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-blue-700 bg-blue-100/60 border border-blue-200/60 rounded-xl hover:bg-blue-100/90 flex items-center gap-1 backdrop-blur-md shadow-sm">移动</button>
-                <button onclick="bulkDelete()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-red-700 bg-red-100/60 border border-red-200/60 rounded-xl hover:bg-red-100/90 flex items-center gap-1 backdrop-blur-md shadow-sm">删除</button>
-                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-1.5 md:py-2 text-sm md:text-base text-slate-700 bg-white/50 border border-white/60 rounded-xl hover:bg-white/80 backdrop-blur-md shadow-sm">取消</button>
+                <span class="text-sm text-slate-700 font-medium mr-2" id="selected-count">已选择 0 项</span>
+                <button onclick="selectAll()" class="btn-hover px-3 py-1.5 text-sm bg-white/50 rounded-xl shadow-sm border border-slate-200">全选</button>
+                <button onclick="bulkMove()" class="btn-hover px-3 py-1.5 text-sm bg-blue-100/60 text-blue-700 rounded-xl shadow-sm">移动</button>
+                <button onclick="bulkDelete()" class="btn-hover px-3 py-1.5 text-sm bg-red-100/60 text-red-700 rounded-xl shadow-sm">删除</button>
+                <button onclick="toggleSelectMode()" class="btn-hover px-3 py-1.5 text-sm bg-white/50 rounded-xl shadow-sm border border-slate-200">取消</button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 relative z-0">
-            <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 md:gap-6 pb-20"></div>
+            <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 pb-20"></div>
             <div id="empty-state" class="hide flex flex-col items-center justify-center h-full text-slate-600 pb-20 drop-shadow-sm">
-                <div class="bg-white/30 p-6 rounded-full backdrop-blur-md border border-white/50 mb-4 shadow-sm">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                </div>
+                <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 <p class="font-medium text-lg" id="empty-text">这里空空如也</p>
             </div>
         </div>
     </main>
 
-    <!-- 弹窗：添加/编辑 P值 -->
-    <div id="modal-add-pvalue" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-pvalue')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] overflow-y-auto z-10">
-            <h3 class="text-xl font-bold mb-4 text-slate-800" id="modal-title-pvalue">保存 P 值</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">P 值代码</label>
-                    <input type="text" id="p-input-val" placeholder="例如: 1a2b3c" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+    <!-- 2. 数据管理区 -->
+    <main id="main-data" class="hide flex-1 flex flex-col h-full relative min-w-0 z-10 glass bg-white/60">
+        <header class="h-16 md:h-20 flex items-center px-4 md:px-8 border-b border-white/40 shrink-0">
+            <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-800 bg-white/40 p-1.5 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800">数据管理</h2>
+        </header>
+        <div class="flex-1 flex items-center justify-center p-6">
+            <div class="bg-white/80 backdrop-blur-xl p-8 rounded-2xl shadow-xl border border-white max-w-md w-full text-center space-y-6">
+                <svg class="w-16 h-16 mx-auto text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                <h3 class="text-lg font-bold text-slate-800">本地数据安全备份</h3>
+                <p class="text-sm text-slate-500">所有的记录均保存在你的浏览器本地。更换设备或清理缓存前，请务必导出数据。</p>
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <button onclick="exportData()" class="btn-hover py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md">导出全库数据</button>
+                    <button onclick="document.getElementById('import-file').click()" class="btn-hover py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-md">导入恢复数据</button>
+                    <input type="file" id="import-file" class="hide" accept=".json" onchange="importData(event)">
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">备注/描述</label>
-                    <input type="text" id="p-input-desc" placeholder="例如: 赛博朋克风格" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">所属分类</label>
-                    <select id="p-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">参考图上传</label>
-                    <input type="file" id="p-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
-                    <img id="p-preview-image" class="mt-3 h-32 w-full object-cover rounded-xl border border-white/50 hide shadow-sm">
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end gap-3">
-                <button onclick="closeModal('modal-add-pvalue')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl font-medium">取消</button>
-                <button onclick="savePValue()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 font-medium">保存</button>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- 弹窗：添加/编辑 词包 -->
-    <div id="modal-add-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-add-prompt')"></div>
+    <!-- 3. 高级拼图排版工具 -->
+    <main id="main-collage" class="hide flex-1 flex flex-col md:flex-row h-full relative min-w-0 z-10 glass bg-white/80">
+        <div class="w-full md:w-[350px] border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 flex flex-col shrink-0 h-[45%] md:h-full">
+            <div class="h-14 md:h-16 flex items-center px-4 border-b border-slate-200 bg-white/50 shrink-0">
+                <button onclick="openSidebar()" class="md:hidden mr-3 text-slate-600 bg-slate-200 p-1.5 rounded">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h2 class="font-bold text-slate-800">排版控制台</h2>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
+                <!-- 基础操作 -->
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('clg-upload').click()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-bold shadow hover:bg-indigo-700 flex justify-center items-center gap-1">导入图片</button>
+                    <input type="file" id="clg-upload" class="hide" multiple accept="image/*" onchange="uploadCollageImages(event)">
+                    <button onclick="deleteSelectedCollage()" class="px-3 bg-red-100 text-red-600 rounded-lg font-bold hover:bg-red-200">删除</button>
+                    <button onclick="selectAllCollage()" class="px-3 bg-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-300">全选</button>
+                </div>
+
+                <!-- 排版核心 -->
+                <div class="bg-white p-3 rounded-xl border shadow-sm space-y-3">
+                    <h4 class="font-bold text-slate-700 border-b pb-1">排版引擎</h4>
+                    <select id="c-layout" class="w-full border rounded py-1.5 px-2 bg-slate-50 font-medium text-indigo-700 focus:outline-none" onchange="updateCollageSettings()">
+                        <option value="masonry">🌊 动态瀑布流 (不裁切, 原图比例)</option>
+                        <option value="meitu12">✨ 12图海报拼图 (5-2-5 不规则)</option>
+                        <option value="template">🧩 9宫格海报 (经典不规则拼接)</option>
+                        <option value="grid">🔲 经典等比宫格 (整齐划一)</option>
+                        <option value="vertical">📜 长条漫拼接 (单列无缝)</option>
+                    </select>
+                    
+                    <div id="setting-ratio" class="flex items-center justify-between hide">
+                        <span class="text-slate-600">小图裁剪比例</span>
+                        <select id="c-ratio" class="border rounded py-1 px-2 focus:outline-none text-xs" onchange="updateCollageSettings()">
+                            <option value="auto">原图自适应</option><option value="3/4">3:4 (竖图)</option><option value="1/1">1:1 (正方)</option><option value="9/16">9:16 (壁纸)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">自动分页断开</span>
+                        <input type="checkbox" id="c-paginate" checked class="w-4 h-4 accent-indigo-600" onchange="updateCollageSettings()">
+                    </div>
+                    
+                    <div class="flex items-center justify-between" id="c-cols-row">
+                        <span class="text-slate-600">指定列数</span>
+                        <input type="number" id="c-cols" value="3" min="1" max="10" class="w-16 border rounded px-2 py-1 text-center" oninput="updateCollageSettings()">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600">图片间距 (px)</span>
+                        <input type="number" id="c-gap" value="10" min="0" class="w-16 border rounded px-2 py-1 text-center" oninput="updateCollageSettings()">
+                    </div>
+                </div>
+
+                <!-- 参数叠加 (含颜色，使用宋体) -->
+                <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
+                    <h4 class="font-bold text-slate-700 border-b pb-1">文字叠加颜色与位置</h4>
+                    <div class="flex items-center gap-1 text-xs">
+                        <span class="text-slate-600 w-8">标价</span>
+                        <input type="color" id="c-price-color" value="#ffffff" class="w-6 h-6 p-0 border-0 rounded cursor-pointer" onchange="updateCollageSettings()" title="颜色">
+                        <input type="text" id="c-price" value="3r" class="flex-1 border rounded px-1.5 py-1" oninput="updateCollageSettings()" placeholder="留空则隐藏">
+                        <input type="number" id="c-price-sz" value="24" class="w-10 border rounded px-1 py-1 text-center" oninput="updateCollageSettings()" title="字号">
+                        <select id="c-price-pos" class="w-14 border rounded py-1" onchange="updateCollageSettings()"><option value="br">右下</option><option value="bl">左下</option><option value="tr">右上</option><option value="tl">左上</option><option value="tc">中上</option><option value="bc">中下</option></select>
+                    </div>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <div class="flex items-center gap-1 text-xs">
+                        <span class="text-slate-600 w-8">序号</span>
+                        <input type="checkbox" id="c-seq" checked class="w-3 h-3 accent-indigo-600" onchange="updateCollageSettings()">
+                        <input type="color" id="c-seq-color" value="#ffffff" class="w-6 h-6 p-0 border-0 rounded cursor-pointer" onchange="updateCollageSettings()" title="颜色">
+                        <input type="number" id="c-seq-sz" value="32" class="w-10 border rounded px-1 py-1 text-center ml-auto" oninput="updateCollageSettings()" title="字号">
+                        <select id="c-seq-pos" class="w-14 border rounded py-1" onchange="updateCollageSettings()"><option value="tl">左上</option><option value="tr">右上</option><option value="bl">左下</option><option value="br">右下</option><option value="tc">中上</option><option value="bc">中下</option></select>
+                    </div>
+                    <div class="flex items-center gap-1 mt-1 pl-2">
+                        <label class="flex items-center gap-1 text-slate-600 text-xs"><input type="checkbox" id="c-seq-glow" onchange="updateCollageSettings()" class="accent-indigo-600 w-3 h-3">微光</label>
+                        <div class="w-2"></div>
+                        <label class="flex items-center gap-1 text-slate-600 text-xs"><input type="checkbox" id="c-seq-stroke" checked onchange="updateCollageSettings()" class="accent-indigo-600 w-3 h-3">描边</label>
+                        <input type="color" id="c-seq-stroke-color" value="#000000" class="w-5 h-5 p-0 border-0 rounded cursor-pointer" onchange="updateCollageSettings()" title="描边色">
+                        <input type="number" id="c-seq-stroke-w" value="2" min="1" max="10" class="w-10 border rounded px-1 py-0.5 text-xs text-center" oninput="updateCollageSettings()" title="粗细">
+                    </div>
+                </div>
+
+                <!-- 浮动图章水印 -->
+                <div class="bg-white p-3 rounded-xl border shadow-sm">
+                    <div class="flex items-center justify-between border-b pb-1 mb-2">
+                        <h4 class="font-bold text-slate-700">全图水印附着</h4>
+                        <button onclick="document.getElementById('c-wm-upload').click()" class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">+ 导入图章</button>
+                        <input type="file" id="c-wm-upload" accept="image/*" class="hide" onchange="uploadWatermarks(event)">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mb-2 leading-tight">每张图都会叠加此图章。直接在右侧任意图片上<strong class="text-indigo-500">点击你想安放的位置</strong>，即可全局同步坐标！</p>
+                    <div id="wm-controls" class="space-y-3 hide">
+                        <div class="flex justify-between items-center text-xs text-blue-700 bg-blue-50 p-1.5 rounded font-bold">
+                            <span>控制选中的图章</span>
+                            <button onclick="deleteActiveWm()" class="text-red-500 hover:bg-red-100 px-1 rounded">删除</button>
+                        </div>
+                        <div class="flex items-center gap-2"><span class="text-slate-600 text-xs w-8">大小</span><input type="range" id="wm-sz" min="5" max="150" value="30" class="flex-1" oninput="updateActiveWm()"></div>
+                        <div class="flex items-center gap-2"><span class="text-slate-600 text-xs w-8">透明</span><input type="range" id="wm-op" min="0.1" max="1" step="0.05" value="0.8" class="flex-1" oninput="updateActiveWm()"></div>
+                        
+                        <!-- 神级交互面板 -->
+                        <div id="wm-move-mode" class="p-2 bg-indigo-50 rounded text-center border border-indigo-200 hide">
+                            <p class="text-xs text-indigo-600 font-bold mb-2">👈 现在请在右侧任意图片上点击目标位置</p>
+                            <button onclick="endWmPlacement()" class="w-full py-1.5 bg-indigo-500 text-white rounded text-sm font-bold shadow-sm">✅ 完成位置调整</button>
+                        </div>
+                        <button id="wm-start-btn" onclick="startWmPlacement()" class="w-full py-1.5 border border-indigo-300 text-indigo-600 rounded text-sm font-bold hover:bg-indigo-50">📍 点击调整位置</button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-white shrink-0">
+                <button onclick="exportCollageAll()" class="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-600 transition">生成并下载高清长图</button>
+            </div>
+        </div>
+
+        <!-- 右侧画布区 (按键左右分页) -->
+        <div class="flex-1 bg-slate-200/50 overflow-hidden p-4 md:p-8 flex flex-col items-center gap-4 relative" id="collage-canvas-area">
+            <!-- 分页按键 -->
+            <div id="pagination-controls" class="hide flex items-center justify-center gap-4 w-full text-slate-700 font-bold z-20 mb-2 shrink-0">
+                <button class="px-4 py-2 bg-white rounded shadow hover:bg-indigo-50 transition flex items-center gap-1" onclick="changeCollagePage(-1)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> 上一页
+                </button>
+                <span id="page-indicator">第 1 / 1 页</span>
+                <button class="px-4 py-2 bg-white rounded shadow hover:bg-indigo-50 transition flex items-center gap-1" onclick="changeCollagePage(1)">
+                    下一页 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+            
+            <div id="pages-wrapper" class="w-full flex-1 overflow-y-auto flex flex-col items-center relative pb-20"></div>
+
+            <div class="text-center text-slate-400 mt-32 absolute top-0 left-0 w-full pointer-events-none" id="clg-empty">
+                <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                请在左侧上传图片进行排版<br><span class="text-xs mt-2 block">点击左上角圆圈多选，点击图片中心互换位置</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- 通用添加/编辑弹窗 -->
+    <div id="modal-universal" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('modal-universal')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative border border-white/60 max-h-[90vh] flex flex-col z-10">
-            <h3 class="text-xl font-bold mb-4 text-slate-800 flex-shrink-0" id="modal-title-prompt">创建词包</h3>
+            <h3 class="text-xl font-bold mb-4 text-slate-800 flex-shrink-0" id="uni-title">添加</h3>
             <div class="space-y-4 overflow-y-auto flex-1 pr-2 pb-2">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">词包名称</label>
-                    <input type="text" id="prompt-input-name" placeholder="例如: 极致光影人像词包" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">所属分类</label>
-                    <select id="prompt-input-category" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none"></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1 drop-shadow-sm">封面图</label>
-                    <input type="file" id="prompt-input-image" accept="image/*" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white/80 file:text-indigo-600 hover:file:bg-white file:cursor-pointer">
-                    <img id="prompt-preview-image" class="mt-3 h-32 w-full object-cover rounded-xl border border-white/50 hide shadow-sm">
-                </div>
-                <div class="pt-2 border-t border-white/30">
-                    <label class="block text-sm font-bold text-slate-800 mb-2 drop-shadow-sm">词包内容 (无限叠加)</label>
-                    <div id="prompt-rows-container" class="space-y-2"></div>
-                    <button onclick="addPromptRow()" class="mt-3 btn-hover w-full py-2 border-2 border-dashed border-indigo-300/80 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/50 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加一行内容
-                    </button>
-                </div>
+                <div id="uni-fields-container" class="space-y-4"></div>
+                <div><label class="block text-sm font-semibold text-slate-700 mb-1">所属分类</label><select id="uni-input-category" class="w-full px-4 py-2 bg-white/70 border rounded-xl focus:outline-none"></select></div>
             </div>
             <div class="mt-6 flex justify-end gap-3 flex-shrink-0">
-                <button onclick="closeModal('modal-add-prompt')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl font-medium">取消</button>
-                <button onclick="savePromptPack()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 font-medium">保存词包</button>
+                <button onclick="closeModal('modal-universal')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 rounded-xl font-medium">取消</button>
+                <button onclick="saveUniversal()" class="btn-hover px-4 py-2 bg-indigo-600/90 text-white rounded-xl font-medium">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- 弹窗：查看 词包详情 -->
+    <!-- 详情阅读面板 (带分段独立复制) -->
     <div id="modal-view-prompt" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-view-prompt')"></div>
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-view-prompt')"></div>
         <div class="glass modal-animate rounded-2xl w-full max-w-lg shadow-2xl relative border border-white/60 flex flex-col overflow-hidden max-h-[90vh] z-10">
-            <div class="h-40 bg-slate-200 relative w-full">
+            <div class="h-40 bg-slate-200 relative w-full shrink-0">
                 <img id="view-prompt-img" src="" class="w-full h-full object-cover hide">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div class="absolute bottom-4 left-5 right-5 flex justify-between items-end">
-                    <h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">词包名称</h3>
-                    <span id="view-prompt-cat" class="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded backdrop-blur-md border border-white/30 whitespace-nowrap">分类</span>
-                </div>
-                <button onclick="closeModal('modal-view-prompt')" class="btn-hover absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition z-20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <div class="absolute bottom-4 left-5 right-5 flex justify-between items-end"><h3 id="view-prompt-title" class="text-2xl font-bold text-white drop-shadow-md truncate pr-2">名称</h3><span id="view-prompt-cat" class="text-xs font-medium text-white/90 bg-white/20 px-2 py-1 rounded backdrop-blur-md border border-white/30 whitespace-nowrap">分类</span></div>
+                <button onclick="closeModal('modal-view-prompt')" class="btn-hover absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full backdrop-blur-md transition z-20"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
-            <div class="flex-1 overflow-y-auto p-5 bg-white/40">
-                <div id="view-prompt-list" class="space-y-3"></div>
-            </div>
-            <div class="p-4 border-t border-white/40 bg-white/50 backdrop-blur-md">
-                <button onclick="copyAllPrompts()" class="btn-hover w-full py-3 bg-indigo-600/90 text-white rounded-xl hover:bg-indigo-600 shadow-md font-bold flex justify-center items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 一键复制全部词包
-                </button>
-            </div>
+            <div class="flex-1 overflow-y-auto p-4 bg-white/40"><div id="view-prompt-list" class="space-y-3"></div></div>
+            <div class="p-4 border-t border-white/40 bg-white/50 backdrop-blur-md shrink-0"><button onclick="copyAllPrompts()" class="btn-hover w-full py-3 bg-indigo-600/90 text-white rounded-xl shadow-md font-bold flex justify-center items-center gap-2">一键复制全部内容</button></div>
         </div>
     </div>
 
-    <!-- 弹窗：移动 -->
+    <!-- 移动弹窗 -->
     <div id="modal-move" class="hide fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modal-move')"></div>
-        <div class="glass modal-animate rounded-2xl w-full max-w-sm p-6 shadow-2xl relative border border-white/60 z-10">
-            <h3 class="text-xl font-bold mb-4 text-slate-800">移动到分类</h3>
-            <select id="move-category-select" class="w-full px-4 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-inner"></select>
-            <div class="mt-6 flex justify-end gap-3">
-                <button onclick="closeModal('modal-move')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 hover:bg-white/80 rounded-xl transition font-medium">取消</button>
-                <button onclick="confirmMove()" class="btn-hover px-4 py-2 bg-blue-600/90 text-white rounded-xl hover:bg-blue-600 transition shadow-md font-medium">确认移动</button>
-            </div>
-        </div>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-move')"></div>
+        <div class="glass modal-animate rounded-2xl w-full max-w-sm p-6 shadow-2xl relative z-10"><h3 class="text-xl font-bold mb-4 text-slate-800">移动到分类</h3><select id="move-category-select" class="w-full px-4 py-2 bg-white/70 rounded-xl focus:outline-none"></select><div class="mt-6 flex justify-end gap-3"><button onclick="closeModal('modal-move')" class="btn-hover px-4 py-2 text-slate-700 bg-white/50 rounded-xl">取消</button><button onclick="confirmMove()" class="btn-hover px-4 py-2 bg-blue-600 text-white rounded-xl">确认移动</button></div></div>
     </div>
 
-    <!-- 提示框 -->
-    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] text-sm md:text-base whitespace-nowrap border border-slate-700/50"></div>
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-[999] text-sm whitespace-nowrap"></div>
 
     <script>
+        // === 核心数据 ===
         let state = {
-            mode: 'pvalue', 
-            selectMode: false,
-            selectedIds: new Set(),
+            mode: 'pvalue', selectMode: false, selectedIds: new Set(),
             pvalue: { categories: ['默认分类'], items: [], currentCategory: '全部' },
             prompt: { categories: ['默认分类'], items: [], currentCategory: '全部' }
         };
-        let currentViewingPrompts = [];
+
+        // 拼图专属状态
+        let collageState = {
+            images: [], // {id, url, selected}
+            watermarks: [], // {id, url, x: px%, y: px%, w: sz%, opacity}
+            settings: { 
+                layout: 'masonry', ratio: 'auto', cols: 3, paginate: true, gap: 10, 
+                price: '3r', pricePos: 'br', priceSize: 24, priceColor: '#ffffff',
+                seqOn: true, seqPos: 'tl', seqSize: 32, seqColor: '#ffffff', seqGlow: false, 
+                seqStroke: true, seqStrokeWidth: 2, seqStrokeColor: '#000000'
+            },
+            swapTargetId: null, activeWmId: null, currentPage: 0,
+            wmPlacingMode: false
+        };
         
-        // --- 核心：编辑状态 ID 记录 ---
-        let editingId = null;
+        let editingId = null; let currentViewingPrompts = [];
 
         function init() {
+            closeSidebar();
             try {
                 const newSaved = localStorage.getItem('mj_manager_v2');
                 if (newSaved) {
-                    const parsed = JSON.parse(newSaved);
-                    state.mode = parsed.mode || 'pvalue';
-                    state.pvalue = parsed.pvalue || state.pvalue;
-                    state.prompt = parsed.prompt || state.prompt;
-                } else {
-                    const oldData = localStorage.getItem('mj_p_manager_data');
-                    if (oldData) {
-                        const parsedOld = JSON.parse(oldData);
-                        state.pvalue.categories = parsedOld.categories || ['默认分类'];
-                        state.pvalue.items = parsedOld.items || [];
-                    }
+                    const p = JSON.parse(newSaved); state.mode = p.mode || 'pvalue';
+                    if(p.pvalue) state.pvalue = p.pvalue; if(p.prompt) state.prompt = p.prompt;
+                    if(state.mode === 'collage' || state.mode === 'data') state.mode = 'pvalue';
                 }
-            } catch (e) {
-                console.error("无法访问本地存储，可能是由于浏览器隐私设置。");
-            }
+            } catch (e) {}
             
             if (typeof Sortable !== 'undefined') {
                 try {
                     new Sortable(document.getElementById('item-grid'), {
-                        animation: 250, easing: "cubic-bezier(1, 0, 0, 1)", delay: 200, delayOnTouchOnly: true, ghostClass: 'sortable-ghost',
+                        animation: 250, delay: 200, delayOnTouchOnly: true, ghostClass: 'sortable-ghost',
                         onEnd: function (evt) {
+                            if(state.mode !== 'pvalue' && state.mode !== 'prompt') return;
                             const gridItems = Array.from(document.querySelectorAll('.p-card'));
                             const newOrder = gridItems.map(item => item.dataset.id);
-                            const currentDB = state[state.mode];
-                            let newItems = [];
+                            const currentDB = state[state.mode]; let newItems = [];
                             const otherItems = currentDB.items.filter(item => currentDB.currentCategory !== '全部' && item.category !== currentDB.currentCategory);
-                            newOrder.forEach(id => {
-                                const found = currentDB.items.find(i => i.id == id);
-                                if(found) newItems.push(found);
-                            });
+                            newOrder.forEach(id => { const found = currentDB.items.find(i => i.id == id); if(found) newItems.push(found); });
                             currentDB.items = currentDB.currentCategory === '全部' ? newItems : [...newItems, ...otherItems];
                             saveData();
                         }
                     });
                 } catch(e) {}
             }
-
-            bindImagePreview('p-input-image', 'p-preview-image');
-            bindImagePreview('prompt-input-image', 'prompt-preview-image');
-
             switchMode(state.mode);
         }
 
-        function bindImagePreview(inputId, imgId) {
-            const el = document.getElementById(inputId);
-            if(!el) return;
-            el.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const img = document.getElementById(imgId);
-                        img.src = event.target.result;
-                        img.classList.remove('hide', 'hidden');
-                    };
-                    reader.readAsDataURL(file); 
-                }
-            });
-        }
+        function saveData() { try { localStorage.setItem('mj_manager_v2', JSON.stringify({ mode: state.mode, pvalue: state.pvalue, prompt: state.prompt })); } catch (e) {} }
 
-        function saveData() {
-            try {
-                const dataToSave = { mode: state.mode, pvalue: state.pvalue, prompt: state.prompt };
-                localStorage.setItem('mj_manager_v2', JSON.stringify(dataToSave));
-            } catch (e) {}
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hide', 'hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hide', 'hidden');
-            }
-        }
+        function openSidebar() { document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-overlay').classList.remove('hide'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hide'); }
 
         function switchMode(newMode) {
-            state.mode = newMode;
-            state.selectMode = false;
-            state.selectedIds.clear();
+            state.mode = newMode; state.selectMode = false; state.selectedIds.clear();
 
-            const pTab = document.getElementById('tab-pvalue');
-            const prTab = document.getElementById('tab-prompt');
-            if(newMode === 'pvalue') {
-                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40";
-                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40";
-                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加 P 值`;
-                document.getElementById('empty-text').innerText = "还没有P值，快添加一个吧";
-            } else {
-                prTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 relative z-40";
-                pTab.className = "flex-1 py-1.5 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 relative z-40";
-                document.getElementById('btn-add-main').innerHTML = `<svg class="w-4 h-4 md:w-5 md:h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 创建词包`;
-                document.getElementById('empty-text').innerText = "还没有词包，快创建一个吧";
-            }
-            
-            document.getElementById('current-category-title').innerText = state[state.mode].currentCategory;
-            saveData();
-            render();
-        }
+            document.querySelectorAll('.nav-tab').forEach(el => el.className = "nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all text-slate-600 hover:bg-white/40 flex items-center gap-2");
+            document.getElementById(`tab-${newMode}`).className = "nav-tab py-2 px-3 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-indigo-700 flex items-center gap-2";
 
-        function render() {
-            renderCategories();
-            renderItems();
-            updateActionBar();
-        }
+            ['main-library', 'main-data', 'main-collage'].forEach(id => document.getElementById(id).classList.add('hide'));
 
-        function renderCategories() {
-            const list = document.getElementById('category-list');
-            list.innerHTML = '';
-            const db = state[state.mode];
-            list.appendChild(createCategoryNode('全部', db.currentCategory === '全部'));
-            db.categories.forEach(cat => {
-                list.appendChild(createCategoryNode(cat, db.currentCategory === cat));
-            });
-        }
-
-        function createCategoryNode(name, isActive) {
-            const div = document.createElement('div');
-            const activeClass = isActive ? 'bg-white/60 text-indigo-800 font-bold border-white/80 shadow-sm' : 'text-slate-700 hover:bg-white/40 border-transparent';
-            div.className = `flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer mb-2 transition-all duration-200 border ${activeClass} relative z-40`;
-            div.onclick = () => {
-                state[state.mode].currentCategory = name;
-                state.selectMode = false;
-                state.selectedIds.clear();
-                document.getElementById('current-category-title').innerText = name;
+            if(newMode === 'pvalue' || newMode === 'prompt') {
+                document.getElementById('main-library').classList.remove('hide');
+                document.getElementById('current-category-title').innerText = state[state.mode].currentCategory;
+                document.getElementById('btn-add-main').innerHTML = newMode==='pvalue'?'添加 P 值':'创建词包';
                 render();
-                if(window.innerWidth < 768) toggleSidebar();
-            };
+            } else if (newMode === 'data') {
+                document.getElementById('main-data').classList.remove('hide');
+            } else if (newMode === 'collage') {
+                document.getElementById('main-collage').classList.remove('hide');
+                renderCollage();
+            }
+            saveData(); if(window.innerWidth < 768) closeSidebar();
+        }
 
-            const left = document.createElement('div');
-            left.className = 'flex items-center gap-2 drop-shadow-sm pointer-events-none';
-            left.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg> <span>${name}</span>`;
-            div.appendChild(left);
+        // ---------- 1. P值/词包 管理 ----------
+        function render() {
+            const list = document.getElementById('category-list'); list.innerHTML = ''; const db = state[state.mode];
+            list.appendChild(createCatNode('全部', db.currentCategory === '全部'));
+            db.categories.forEach(cat => list.appendChild(createCatNode(cat, db.currentCategory === cat)));
 
-            const db = state[state.mode];
-            if (name !== '全部' && db.categories.length > 1) {
-                const delBtn = document.createElement('button');
-                delBtn.className = 'text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50/50 btn-hover z-50';
-                delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
-                delBtn.onclick = (e) => {
+            const grid = document.getElementById('item-grid'); const empty = document.getElementById('empty-state'); grid.innerHTML = '';
+            const items = db.currentCategory === '全部' ? db.items : db.items.filter(i => i.category === db.currentCategory);
+            if (items.length === 0) empty.classList.remove('hide'); 
+            else { empty.classList.add('hide'); items.forEach((item, idx) => grid.appendChild(state.mode === 'pvalue' ? createPValueCard(item, idx) : createPromptCard(item, idx))); }
+            
+            const nBar = document.getElementById('normal-action-bar'); const bBar = document.getElementById('bulk-action-bar');
+            if(state.selectMode){ nBar.classList.add('hide'); bBar.classList.remove('hide'); document.getElementById('selected-count').innerText=`已选择 ${state.selectedIds.size} 项`;}
+            else { nBar.classList.remove('hide'); bBar.classList.add('hide'); }
+        }
+
+        function createCatNode(name, isActive) {
+            const div = document.createElement('div');
+            div.className = `flex justify-between items-center px-3 py-2.5 rounded-xl cursor-pointer mb-2 transition-all duration-200 border ${isActive ? 'bg-white/60 text-indigo-800 font-bold border-white/80 shadow-sm' : 'text-slate-700 hover:bg-white/40 border-transparent'}`;
+            div.onclick = () => { state[state.mode].currentCategory = name; state.selectMode = false; state.selectedIds.clear(); document.getElementById('current-category-title').innerText = name; render(); if(window.innerWidth < 768) closeSidebar(); };
+            div.innerHTML = `<div class="flex items-center gap-2 drop-shadow-sm pointer-events-none"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg> <span>${name}</span></div>`;
+            if (name !== '全部' && state[state.mode].categories.length > 1) {
+                const btn = document.createElement('button'); btn.className = 'text-slate-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50/50 btn-hover';
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                btn.onclick = (e) => {
                     e.stopPropagation();
-                    if(confirm(`确定删除分类 "${name}" 吗？数据会被移至其他分类。`)) {
-                        db.categories = db.categories.filter(c => c !== name);
-                        const fallback = db.categories[0];
-                        db.items.forEach(item => { if(item.category === name) item.category = fallback; });
-                        if(db.currentCategory === name) {
-                            db.currentCategory = '全部';
-                            document.getElementById('current-category-title').innerText = '全部';
-                        }
+                    if(confirm(`删除分类 "${name}" 吗？`)) {
+                        const db = state[state.mode]; db.categories = db.categories.filter(c => c !== name);
+                        const fallback = db.categories[0]; db.items.forEach(item => { if(item.category === name) item.category = fallback; });
+                        if(db.currentCategory === name) { db.currentCategory = '全部'; document.getElementById('current-category-title').innerText = '全部'; }
                         saveData(); render();
                     }
-                };
-                div.appendChild(delBtn);
+                }; div.appendChild(btn);
             }
             return div;
         }
 
-        function renderItems() {
-            const grid = document.getElementById('item-grid');
-            const empty = document.getElementById('empty-state');
-            grid.innerHTML = '';
-            
-            const db = state[state.mode];
-            const filteredItems = db.currentCategory === '全部' ? db.items : db.items.filter(i => i.category === db.currentCategory);
-
-            if (filteredItems.length === 0) {
-                empty.classList.remove('hide', 'hidden');
-            } else {
-                empty.classList.add('hide', 'hidden');
-                filteredItems.forEach((item, index) => {
-                    grid.appendChild(state.mode === 'pvalue' ? createPValueCard(item, index) : createPromptCard(item, index));
-                });
-            }
-        }
-
+        // P值和词包的卡片
         function createPValueCard(item, index) {
-            const div = document.createElement('div');
-            div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`;
-            div.style.animationDelay = `${index * 30}ms`;
-            div.dataset.id = item.id;
-
-            div.onclick = (e) => {
-                // 拦截编辑和复制按钮点击
+            const div = document.createElement('div'); div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group flex flex-col h-full ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`; div.style.animationDelay = `${index * 30}ms`; div.dataset.id = item.id;
+            
+            // ★ 修改：点击卡片任何位置，如果是多选模式则点击生效；否则正常。避免需要找小圆圈。
+            div.onclick = (e) => { 
                 if(e.target.closest('.copy-btn') || e.target.closest('.edit-btn')) return; 
-                if(state.selectMode) toggleSelect(item.id);
+                if(state.selectMode) { toggleSelect(item.id); return; }
             };
-
-            const imgHtml = item.image ? `<img src="${item.image}" alt="ref">` : `<svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
-            const checkboxHtml = getCheckboxHtml(item.id);
-            const displayPValue = item.pvalue.startsWith('--p ') ? item.pvalue : `--p ${item.pvalue}`;
-
-            div.innerHTML = `
-                ${checkboxHtml}
-                <div class="card-image-container relative border-b border-white/30 pointer-events-none">
-                    ${imgHtml}
-                    <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
-                    <span class="absolute bottom-2 left-3 text-white text-xs font-semibold bg-slate-900/40 px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 shadow-sm">${item.category}</span>
-                </div>
-                <div class="p-4 bg-gradient-to-b from-white/10 to-transparent">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="font-mono font-bold text-slate-800 truncate pr-2 text-lg drop-shadow-sm">${displayPValue}</span>
-                        <div class="flex items-center gap-1 z-20 relative">
-                            <!-- 新增：编辑按钮 -->
-                            <button class="edit-btn btn-hover p-1.5 text-slate-500 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="openEditPValue('${item.id}')" title="编辑">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            </button>
-                            <button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl transition-all shadow-sm border border-white/50 backdrop-blur-sm" onclick="copyToClipboard('${displayPValue}')" title="复制">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="text-sm text-slate-600 truncate font-medium drop-shadow-sm" title="${item.desc}">${item.desc || '暂无描述'}</p>
-                </div>
-            `;
+            
+            const imgHtml = item.image ? `<img src="${item.image}" alt="ref">` : `<div class="h-full w-full bg-slate-100 flex items-center justify-center"><svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
+            const chk = state.selectMode ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 pointer-events-none ${state.selectedIds.has(item.id) ? 'bg-indigo-500 border-indigo-500 flex items-center justify-center' : 'bg-white/80 border-slate-300'}">${state.selectedIds.has(item.id) ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}</div>` : '';
+            const disp = item.pvalue.startsWith('--p ') ? item.pvalue : `--p ${item.pvalue}`;
+            div.innerHTML = `${chk}<div class="card-image-container relative border-b border-white/30 pointer-events-none">${imgHtml}<div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-900/50 to-transparent"></div><span class="absolute bottom-2 left-3 text-white text-xs font-semibold bg-slate-900/40 px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 shadow-sm">${item.category}</span></div><div class="p-4 bg-gradient-to-b from-white/10 to-transparent flex-1 flex flex-col justify-between"><div class="mb-2"><div class="font-mono font-bold text-slate-800 truncate pr-2 text-lg drop-shadow-sm">${disp}</div><p class="text-sm text-slate-600 truncate font-medium mt-1">${item.desc || '暂无描述'}</p></div><div class="flex justify-end items-center gap-1 z-20 relative"><button class="edit-btn btn-hover p-1.5 text-slate-500 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-xl" onclick="openEditModal('${item.id}')"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button><button class="copy-btn btn-hover p-1.5 text-slate-500 hover:text-indigo-700 bg-white/40 hover:bg-white/80 rounded-xl" onclick="copyToClipboard('${disp}')"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button></div></div>`;
             return div;
         }
 
         function createPromptCard(item, index) {
-            const div = document.createElement('div');
-            div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`;
-            div.style.animationDelay = `${index * 30}ms`;
-            div.dataset.id = item.id;
-
-            div.onclick = (e) => {
-                if(e.target.closest('.edit-btn')) return; // 拦截编辑按钮
-                if(state.selectMode) {
-                    toggleSelect(item.id);
-                } else {
-                    openViewPromptModal(item);
-                }
+            const div = document.createElement('div'); div.className = `p-card glass-card rounded-2xl overflow-hidden relative cursor-pointer animate-fade-in group flex flex-col h-full ${state.selectedIds.has(item.id) ? 'ring-2 ring-indigo-400/80 bg-white/80' : ''}`; div.style.animationDelay = `${index * 30}ms`; div.dataset.id = item.id;
+            
+            div.onclick = (e) => { 
+                if(e.target.closest('.edit-btn')) return; 
+                if(state.selectMode) { toggleSelect(item.id); return; } 
+                openDetailView(item); 
             };
-
-            const imgHtml = item.image ? `<img src="${item.image}" alt="ref">` : `<svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
-            const checkboxHtml = getCheckboxHtml(item.id);
-            const promptCount = (item.prompts && item.prompts.length) ? item.prompts.length : 0;
-
-            div.innerHTML = `
-                ${checkboxHtml}
-                <div class="card-image-container relative border-b border-white/30 h-32 md:h-40 pointer-events-none">
-                    ${imgHtml}
-                    <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
-                    <div class="absolute top-2 right-2 bg-indigo-600/90 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-md shadow-sm border border-white/20">
-                        ${promptCount} 条词包
-                    </div>
-                </div>
-                <div class="p-4 bg-gradient-to-b from-white/20 to-transparent">
-                    <h3 class="font-bold text-slate-800 text-lg truncate drop-shadow-sm mb-1">${item.name || '未命名词包'}</h3>
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span>
-                        <div class="flex items-center gap-2 relative z-20">
-                            <!-- 新增：编辑按钮 -->
-                            <button class="edit-btn btn-hover p-1 text-slate-400 hover:text-blue-600 bg-white/40 hover:bg-white/80 rounded-lg transition-all" onclick="openEditPrompt('${item.id}')" title="编辑">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            </button>
-                            <span class="text-sm text-indigo-600 font-medium group-hover:underline flex items-center gap-1">查看详情</span>
-                        </div>
-                    </div>
-                </div>
-            `;
+            
+            const imgHtml = item.image ? `<img src="${item.image}" alt="ref">` : `<div class="h-full w-full bg-slate-100 flex items-center justify-center"><svg class="w-12 h-12 text-slate-300 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
+            const chk = state.selectMode ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 pointer-events-none ${state.selectedIds.has(item.id) ? 'bg-indigo-500 border-indigo-500 flex items-center justify-center' : 'bg-white/80 border-slate-300'}">${state.selectedIds.has(item.id) ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}</div>` : '';
+            const cCount = (item.contentList && item.contentList.length) ? item.contentList.length : (item.prompts?item.prompts.length:0);
+            div.innerHTML = `${chk}<div class="card-image-container relative border-b border-white/30 h-32 pointer-events-none">${imgHtml}<div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none"></div><div class="absolute top-2 right-2 bg-indigo-600/90 text-white text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-md">${cCount} 条</div></div><div class="p-4 bg-gradient-to-b from-white/20 to-transparent flex-1 flex flex-col justify-between"><div class="mb-2"><h3 class="font-bold text-slate-800 text-lg truncate mb-1">${item.title||item.name||'未命名'}</h3><span class="text-xs font-semibold text-slate-500 bg-white/50 px-2 py-0.5 rounded shadow-sm border border-white/60">${item.category}</span></div><div class="flex justify-end z-20 relative"><button class="edit-btn btn-hover p-1 text-slate-400 hover:text-blue-600 bg-white/40 rounded-lg" onclick="openEditModal('${item.id}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button></div></div>`;
             return div;
         }
 
-        function getCheckboxHtml(id) {
-            if(!state.selectMode) return '';
-            return `
-                <div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 ${state.selectedIds.has(id) ? 'bg-indigo-500 border-indigo-500 flex items-center justify-center' : 'bg-white/80 border-slate-300/80 backdrop-blur-md'} shadow-md transition-all">
-                    ${state.selectedIds.has(id) ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
-                </div>
-            `;
-        }
+        function toggleSelect(id) { if(state.selectedIds.has(id)) state.selectedIds.delete(id); else state.selectedIds.add(id); renderItems(); updateActionBar(); }
 
-        function toggleSelect(id) {
-            if (state.selectedIds.has(id)) state.selectedIds.delete(id);
-            else state.selectedIds.add(id);
-            renderItems(); updateActionBar();
-        }
-
-        function updateActionBar() {
-            const normalBar = document.getElementById('normal-action-bar');
-            const bulkBar = document.getElementById('bulk-action-bar');
-            
-            if (state.selectMode) {
-                normalBar.classList.add('hide', 'hidden'); bulkBar.classList.remove('hide', 'hidden');
-                document.getElementById('selected-count').innerText = `已选择 ${state.selectedIds.size} 项`;
-            } else {
-                normalBar.classList.remove('hide', 'hidden'); bulkBar.classList.add('hide', 'hidden');
-            }
-        }
-
-        function addCategory() {
-            const name = prompt("请输入新分类名称：");
-            const db = state[state.mode];
-            if (name && name.trim() !== '') {
-                if (db.categories.includes(name) || name === '全部') return showToast('分类已存在！');
-                db.categories.push(name.trim());
-                saveData(); renderCategories();
-            }
-        }
-
-        // --- 打开【新建】窗口 ---
-        function openAddModal() {
-            editingId = null; // 标记为新建
-            const db = state[state.mode];
+        function openAddModal() { editingId = null; buildForm(); }
+        function openEditModal(id) { editingId = id; buildForm(id); }
+        function buildForm(id = null) {
+            const db = state[state.mode]; const item = id ? db.items.find(i=>i.id===id) : null;
+            document.getElementById('uni-title').innerText = id ? `编辑内容` : `添加内容`;
+            const cs = document.getElementById('uni-input-category'); cs.innerHTML=''; db.categories.forEach(c => cs.add(new Option(c,c,false,(item?item.category:db.currentCategory)===c)));
+            let html = '';
             if(state.mode === 'pvalue') {
-                document.getElementById('modal-title-pvalue').innerText = "保存 P 值";
-                document.getElementById('p-input-val').value = '';
-                document.getElementById('p-input-desc').value = '';
-                document.getElementById('p-input-image').value = '';
-                document.getElementById('p-preview-image').classList.add('hide', 'hidden');
-                document.getElementById('p-preview-image').src = '';
-                
-                const catSelect = document.getElementById('p-input-category');
-                catSelect.innerHTML = '';
-                db.categories.forEach(cat => {
-                    catSelect.add(new Option(cat, cat, false, db.currentCategory === cat));
-                });
-                document.getElementById('modal-add-pvalue').classList.remove('hide', 'hidden');
+                html = `<div><label class="text-sm font-bold text-slate-700 block mb-1">P值代码</label><input type="text" id="f-pvalue" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400" value="${item?item.pvalue:''}"></div>
+                        <div><label class="text-sm font-bold text-slate-700 block mb-1">备注</label><input type="text" id="f-desc" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400" value="${item?item.desc||'':''}"></div>
+                        ${getImageUploadHtml(item)}`;
             } else {
-                document.getElementById('modal-title-prompt').innerText = "创建词包";
-                document.getElementById('prompt-input-name').value = '';
-                document.getElementById('prompt-input-image').value = '';
-                document.getElementById('prompt-preview-image').classList.add('hide', 'hidden');
-                document.getElementById('prompt-preview-image').src = '';
-                document.getElementById('prompt-rows-container').innerHTML = '';
-                addPromptRow(); 
-                
-                const catSelect = document.getElementById('prompt-input-category');
-                catSelect.innerHTML = '';
-                db.categories.forEach(cat => {
-                    catSelect.add(new Option(cat, cat, false, db.currentCategory === cat));
-                });
-                document.getElementById('modal-add-prompt').classList.remove('hide', 'hidden');
+                html = `<div><label class="text-sm font-bold text-slate-700 block mb-1">标题</label><input type="text" id="f-title" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400" value="${item?item.title||item.name||'':''}"></div>
+                        ${getImageUploadHtml(item)}
+                        <div class="pt-2 border-t mt-4"><label class="text-sm font-bold text-slate-800 block mb-2">分段内容</label><div id="f-rows" class="space-y-2"></div><button onclick="addUniRow()" class="mt-2 w-full py-2 border border-dashed border-indigo-300 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-50"><svg class="w-5 h-5 inline-block -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> 添加一行</button></div>`;
             }
-        }
-
-        // --- 打开【编辑】窗口 ---
-        function openEditPValue(id) {
-            editingId = id; // 标记为编辑
-            const item = state.pvalue.items.find(i => i.id === id);
-            if(!item) return;
-
-            document.getElementById('modal-title-pvalue').innerText = "编辑 P 值";
-            document.getElementById('p-input-val').value = item.pvalue;
-            document.getElementById('p-input-desc').value = item.desc || '';
-            document.getElementById('p-input-image').value = ''; // 无法赋予文件路径，但保留原图
-            
-            const imgEl = document.getElementById('p-preview-image');
-            if(item.image) {
-                imgEl.src = item.image;
-                imgEl.classList.remove('hide', 'hidden');
-            } else {
-                imgEl.src = '';
-                imgEl.classList.add('hide', 'hidden');
-            }
-
-            const catSelect = document.getElementById('p-input-category');
-            catSelect.innerHTML = '';
-            state.pvalue.categories.forEach(cat => {
-                catSelect.add(new Option(cat, cat, false, item.category === cat));
-            });
-
-            document.getElementById('modal-add-pvalue').classList.remove('hide', 'hidden');
-        }
-
-        function openEditPrompt(id) {
-            editingId = id; // 标记为编辑
-            const item = state.prompt.items.find(i => i.id === id);
-            if(!item) return;
-
-            document.getElementById('modal-title-prompt').innerText = "编辑词包";
-            document.getElementById('prompt-input-name').value = item.name;
-            document.getElementById('prompt-input-image').value = '';
-            
-            const imgEl = document.getElementById('prompt-preview-image');
-            if(item.image) {
-                imgEl.src = item.image;
-                imgEl.classList.remove('hide', 'hidden');
-            } else {
-                imgEl.src = '';
-                imgEl.classList.add('hide', 'hidden');
-            }
-
-            // 还原旧的词包内容
-            document.getElementById('prompt-rows-container').innerHTML = '';
-            if(item.prompts && item.prompts.length > 0) {
-                item.prompts.forEach(p => addPromptRow(p));
-            } else {
-                addPromptRow(); // 至少给一行空的
-            }
-
-            const catSelect = document.getElementById('prompt-input-category');
-            catSelect.innerHTML = '';
-            state.prompt.categories.forEach(cat => {
-                catSelect.add(new Option(cat, cat, false, item.category === cat));
-            });
-
-            document.getElementById('modal-add-prompt').classList.remove('hide', 'hidden');
-        }
-
-        function addPromptRow(val = '') {
-            const container = document.getElementById('prompt-rows-container');
-            const num = container.children.length + 1;
-            const row = document.createElement('div');
-            row.className = 'flex gap-2 animate-fade-in group';
-            row.style.animationDuration = '0.3s';
-            row.innerHTML = `
-                <div class="flex-shrink-0 w-8 h-10 flex items-center justify-center bg-white/50 text-indigo-800 font-bold rounded-xl border border-white/60 shadow-inner">${num}</div>
-                <textarea class="prompt-row-input flex-1 px-3 py-2 bg-white/70 border border-white/80 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-inner resize-y min-h-[40px] text-sm" placeholder="输入第 ${num} 段词包...">${val}</textarea>
-                <button onclick="this.parentElement.remove(); updatePromptRowNumbers();" class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all border border-transparent btn-hover">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            `;
-            container.appendChild(row);
-        }
-
-        function updatePromptRowNumbers() {
-            const container = document.getElementById('prompt-rows-container');
-            Array.from(container.children).forEach((row, index) => {
-                row.querySelector('div').innerText = index + 1;
-                row.querySelector('textarea').placeholder = `输入第 ${index + 1} 段词包...`;
-            });
-        }
-
-        function closeModal(id) { document.getElementById(id).classList.add('hide', 'hidden'); }
-
-        // --- 保存逻辑 (兼容新建与编辑) ---
-        function savePValue() {
-            const pvalue = document.getElementById('p-input-val').value.trim();
-            if (!pvalue) return showToast('P值不能为空！');
-            
-            const db = state.pvalue;
-            const imgSrc = document.getElementById('p-preview-image').src;
-            const finalImage = imgSrc.startsWith('data:image') ? imgSrc : null;
-
-            if (editingId) {
-                // 更新现有项
-                const item = db.items.find(i => i.id === editingId);
-                if (item) {
-                    item.pvalue = pvalue;
-                    item.desc = document.getElementById('p-input-desc').value.trim();
-                    item.category = document.getElementById('p-input-category').value;
-                    item.image = finalImage;
+            document.getElementById('uni-fields-container').innerHTML = html;
+            if(document.getElementById('f-img-input')) {
+                document.getElementById('f-img-input').onchange = e => {
+                    if(e.target.files[0]){ const r = new FileReader(); r.onload=ev=>{ document.getElementById('f-img-preview').src=ev.target.result; document.getElementById('f-img-preview').classList.remove('hide');}; r.readAsDataURL(e.target.files[0]); }
                 }
-            } else {
-                // 创建新项
-                db.items.unshift({
-                    id: 'p_' + Date.now().toString(),
-                    pvalue: pvalue,
-                    desc: document.getElementById('p-input-desc').value.trim(),
-                    category: document.getElementById('p-input-category').value,
-                    image: finalImage
-                });
             }
-            
-            afterSave(db, document.getElementById('p-input-category').value, 'modal-add-pvalue');
+            if(document.getElementById('f-rows')) {
+                const list = item ? (item.contentList || item.prompts || []) : [];
+                if(list.length>0) list.forEach(v => addUniRow(v)); else addUniRow();
+            }
+            document.getElementById('modal-universal').classList.remove('hide');
         }
 
-        function savePromptPack() {
-            const name = document.getElementById('prompt-input-name').value.trim();
-            if (!name) return showToast('请填写词包名称！');
+        function getImageUploadHtml(item) { return `<div><label class="text-sm font-bold text-slate-700 block mb-1 mt-2">封面图 (点击更换)</label><div class="relative w-full h-24 bg-slate-100 rounded-lg overflow-hidden border cursor-pointer hover:opacity-80" onclick="document.getElementById('f-img-input').click()"><img id="f-img-preview" src="${item&&item.image?item.image:''}" class="w-full h-full object-cover ${item&&item.image?'':'hide'}"><div class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold ${item&&item.image?'hide':''}"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></div></div><input type="file" id="f-img-input" accept="image/*" class="hide"></div>`; }
+        function addUniRow(val='') { const div = document.createElement('div'); div.className = 'flex gap-2 animate-fade-in group'; div.innerHTML = `<textarea class="f-row-val flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y min-h-[40px]">${val}</textarea><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500 p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`; document.getElementById('f-rows').appendChild(div); }
+        
+        function saveUniversal() {
+            const db = state[state.mode]; const cat = document.getElementById('uni-input-category').value;
+            let finalImg = null; if(document.getElementById('f-img-preview') && !document.getElementById('f-img-preview').classList.contains('hide')) finalImg = document.getElementById('f-img-preview').src;
+            let newItem = { id: editingId || (state.mode + '_' + Date.now()), category: cat, image: finalImg };
 
-            const inputs = document.querySelectorAll('.prompt-row-input');
-            const prompts = [];
-            inputs.forEach(input => {
-                if(input.value.trim() !== '') prompts.push(input.value.trim());
-            });
-            if(prompts.length === 0) return showToast('至少需要一行内容！');
-
-            const db = state.prompt;
-            const imgSrc = document.getElementById('prompt-preview-image').src;
-            const finalImage = imgSrc.startsWith('data:image') ? imgSrc : null;
-
-            if (editingId) {
-                // 更新现有项
-                const item = db.items.find(i => i.id === editingId);
-                if (item) {
-                    item.name = name;
-                    item.category = document.getElementById('prompt-input-category').value;
-                    item.image = finalImage;
-                    item.prompts = prompts;
-                }
+            if(state.mode === 'pvalue') {
+                const pv = document.getElementById('f-pvalue').value.trim(); if(!pv) return showToast('代码不能为空');
+                newItem.pvalue = pv; newItem.desc = document.getElementById('f-desc').value.trim();
             } else {
-                // 创建新项
-                db.items.unshift({
-                    id: 'pr_' + Date.now().toString(),
-                    name: name,
-                    category: document.getElementById('prompt-input-category').value,
-                    image: finalImage,
-                    prompts: prompts
-                });
+                const t = document.getElementById('f-title').value.trim(); if(!t) return showToast('标题不能为空');
+                const list = Array.from(document.querySelectorAll('.f-row-val')).map(el=>el.value.trim()).filter(Boolean); if(list.length===0) return showToast('至少填写一行内容');
+                newItem.title = t; newItem.contentList = list;
             }
-            
-            afterSave(db, document.getElementById('prompt-input-category').value, 'modal-add-prompt');
+            if(editingId) { const idx = db.items.findIndex(i=>i.id===editingId); if(idx>-1) db.items[idx] = { ...db.items[idx], ...newItem }; } else { db.items.unshift(newItem); }
+            if(db.currentCategory !== '全部') db.currentCategory = cat;
+            saveData(); closeModal('modal-universal'); render(); showToast('已保存');
         }
 
-        function afterSave(db, category, modalId) {
-            saveData();
-            closeModal(modalId);
-            editingId = null; // 重置编辑状态
-            
-            // 如果更改了分类，自动跳转到该分类下
-            if(db.currentCategory !== '全部' && db.currentCategory !== category) {
-                db.currentCategory = category;
-                document.getElementById('current-category-title').innerText = category;
-            }
-            render();
-            showToast('保存成功！');
-        }
-
-        // --- 其他交互逻辑 ---
-        function openViewPromptModal(item) {
-            currentViewingPrompts = item.prompts || [];
-            const imgEl = document.getElementById('view-prompt-img');
-            if(item.image) {
-                imgEl.src = item.image; imgEl.classList.remove('hide', 'hidden');
-            } else {
-                imgEl.classList.add('hide', 'hidden'); imgEl.src = '';
-            }
-            document.getElementById('view-prompt-title').innerText = item.name;
-            document.getElementById('view-prompt-cat').innerText = item.category;
-
-            const listEl = document.getElementById('view-prompt-list');
-            listEl.innerHTML = '';
-            currentViewingPrompts.forEach((text, index) => {
-                const row = document.createElement('div');
-                row.className = "p-3 bg-white/80 rounded-xl border border-white shadow-sm flex items-start gap-3 group animate-fade-in";
-                row.style.animationDelay = `${index * 40}ms`;
-                row.innerHTML = `
-                    <div class="flex-shrink-0 mt-0.5 text-xs font-bold text-indigo-400 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">#${index+1}</div>
-                    <p class="text-sm text-slate-700 font-medium break-all flex-1 pt-0.5">${text}</p>
-                    <button class="btn-hover text-slate-400 hover:text-indigo-600 bg-white hover:bg-indigo-50 p-1.5 rounded-lg border border-slate-200 transition-all shadow-sm" onclick="copyToClipboard(\`${text.replace(/`/g, '\\`')}\`)" title="复制此段">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </button>
-                `;
+        function openDetailView(item) {
+            currentViewingPrompts = item.contentList || item.prompts || [];
+            const imgEl = document.getElementById('view-prompt-img'); if(item.image) { imgEl.src = item.image; imgEl.classList.remove('hide'); } else { imgEl.classList.add('hide'); }
+            document.getElementById('view-prompt-title').innerText = item.title || item.name || '未命名'; document.getElementById('view-prompt-cat').innerText = item.category;
+            const listEl = document.getElementById('view-prompt-list'); listEl.innerHTML = '';
+            currentViewingPrompts.forEach((text, i) => {
+                const row = document.createElement('div'); row.className = "p-3 bg-white/80 rounded-xl border shadow-sm flex items-start gap-3";
+                row.innerHTML = `<div class="flex-shrink-0 mt-0.5 text-xs font-bold text-indigo-400 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">#${i+1}</div><p class="text-sm text-slate-700 font-medium break-all flex-1 pt-0.5 whitespace-pre-wrap">${text}</p><button class="text-slate-400 hover:text-indigo-600 bg-white p-1.5 rounded-lg border shadow-sm" onclick="copyToClipboard(\`${text.replace(/`/g, '\\`')}\`)" title="复制"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>`;
                 listEl.appendChild(row);
             });
-            document.getElementById('modal-view-prompt').classList.remove('hide', 'hidden');
+            document.getElementById('modal-view-prompt').classList.remove('hide');
+        }
+        function copyAllPrompts() { if(currentViewingPrompts.length === 0) return; copyToClipboard(currentViewingPrompts.join('\n\n'), '已复制全部内容'); }
+
+        // 多选操作
+        function selectAll() { const db = state[state.mode]; const it = db.currentCategory==='全部'?db.items:db.items.filter(i=>i.category===db.currentCategory); if(state.selectedIds.size===it.length && it.length>0) state.selectedIds.clear(); else it.forEach(i=>state.selectedIds.add(i.id)); renderItems(); updateActionBar(); }
+        function bulkDelete() { if(state.selectedIds.size===0) return showToast('请先选择'); if(confirm('确定删除选中项？')) { const db = state[state.mode]; db.items = db.items.filter(i => !state.selectedIds.has(i.id)); state.selectedIds.clear(); state.selectMode=false; saveData(); render(); } }
+        function bulkMove() { if(state.selectedIds.size===0) return showToast('请先选择'); const s = document.getElementById('move-category-select'); s.innerHTML=''; state[state.mode].categories.forEach(c=>s.appendChild(new Option(c,c))); document.getElementById('modal-move').classList.remove('hide'); }
+        function confirmMove() { const t = document.getElementById('move-category-select').value; state[state.mode].items.forEach(i=>{if(state.selectedIds.has(i.id)) i.category=t;}); state.selectedIds.clear(); state.selectMode=false; saveData(); closeModal('modal-move'); render(); showToast('移动成功'); }
+        function updateActionBar() {
+            const nBar = document.getElementById('normal-action-bar'); const bBar = document.getElementById('bulk-action-bar');
+            if(state.selectMode){ nBar.classList.add('hide', 'hidden'); bBar.classList.remove('hide', 'hidden'); document.getElementById('selected-count').innerText=`已选择 ${state.selectedIds.size} 项`;}
+            else { nBar.classList.remove('hide', 'hidden'); bBar.classList.add('hide', 'hidden'); }
         }
 
-        function copyAllPrompts() {
-            if(currentViewingPrompts.length === 0) return;
-            const fullText = currentViewingPrompts.join('\n\n'); 
-            copyToClipboard(fullText, '已一键复制全部词包内容！');
+        // ---------- 2. 数据管理 ----------
+        function exportData() {
+            const dataStr = JSON.stringify({ mode: state.mode, pvalue: state.pvalue, prompt: state.prompt }, null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `MJ_Manager_Backup_${new Date().getTime()}.json`; a.click(); URL.revokeObjectURL(url);
+        }
+        function importData(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader(); reader.onload = ev => {
+                try { const p = JSON.parse(ev.target.result); if(confirm('导入将覆盖现有数据，是否继续？')) { if(p.pvalue) state.pvalue = p.pvalue; if(p.prompt) state.prompt = p.prompt; saveData(); alert('成功'); location.reload(); } } catch(err) { alert('格式错误'); } e.target.value = '';
+            }; reader.readAsText(file);
         }
 
-        function copyToClipboard(text, successMsg = null) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showToast(successMsg || '复制成功');
-            } catch (err) {
-                showToast('复制失败，请手动选择复制');
-            } finally {
-                document.body.removeChild(textarea);
+        // ---------- 3. 高级拼图引擎 ----------
+
+        function uploadCollageImages(e) {
+            const files = e.target.files; if(!files || files.length === 0) return;
+            let promises = Array.from(files).map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = ev => resolve({ id: 'img_' + Math.random().toString(36).substr(2,9), url: ev.target.result, selected: false });
+                    reader.readAsDataURL(file);
+                });
+            });
+            Promise.all(promises).then(newImages => { collageState.images = [...collageState.images, ...newImages]; renderCollage(); e.target.value = ''; });
+        }
+
+        function updateCollageSettings() {
+            const s = collageState.settings;
+            s.layout = document.getElementById('c-layout').value;
+            s.ratio = document.getElementById('c-ratio').value;
+            s.paginate = document.getElementById('c-paginate').checked;
+            s.cols = parseInt(document.getElementById('c-cols').value) || 3;
+            s.gap = parseInt(document.getElementById('c-gap').value) || 0;
+            s.price = document.getElementById('c-price').value.trim();
+            s.priceSz = parseInt(document.getElementById('c-price-sz').value) || 24;
+            s.pricePos = document.getElementById('c-price-pos').value;
+            s.priceColor = document.getElementById('c-price-color').value;
+            s.seqOn = document.getElementById('c-seq').checked;
+            s.seqSz = parseInt(document.getElementById('c-seq-sz').value) || 32;
+            s.seqPos = document.getElementById('c-seq-pos').value;
+            s.seqColor = document.getElementById('c-seq-color').value;
+            s.seqGlow = document.getElementById('c-seq-glow').checked;
+            s.seqStroke = document.getElementById('c-seq-stroke').checked;
+            s.seqStrokeWidth = parseInt(document.getElementById('c-seq-stroke-w').value) || 2;
+            s.seqStrokeColor = document.getElementById('c-seq-stroke-color').value;
+            
+            const rowCols = document.getElementById('c-cols-row');
+            const rowRatio = document.getElementById('setting-ratio');
+            
+            if (s.layout === 'vertical' || s.layout === 'template' || s.layout === 'meitu12') rowCols.classList.add('hide'); else rowCols.classList.remove('hide');
+            if (s.layout === 'masonry') rowRatio.classList.add('hide'); else rowRatio.classList.remove('hide');
+            
+            if (s.layout === 'template' || s.layout === 'meitu12') { 
+                document.getElementById('c-paginate').checked = true; s.paginate = true; document.getElementById('c-paginate').parentElement.classList.add('opacity-50', 'pointer-events-none'); 
+            } else {
+                document.getElementById('c-paginate').parentElement.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            collageState.currentPage = 0;
+            renderCollage();
+        }
+
+        function changeCollagePage(dir) {
+            const s = collageState.settings;
+            const maxPerPage = s.layout === 'meitu12' ? 12 : 9;
+            const totalPages = s.paginate ? Math.ceil(collageState.images.length / maxPerPage) : 1;
+            collageState.currentPage += dir;
+            if(collageState.currentPage < 0) collageState.currentPage = 0;
+            if(collageState.currentPage >= totalPages) collageState.currentPage = totalPages - 1;
+            renderCollage();
+        }
+
+        function renderCollage() {
+            const area = document.getElementById('pages-wrapper');
+            const empty = document.getElementById('clg-empty');
+            const pageControls = document.getElementById('pagination-controls');
+            area.innerHTML = ''; 
+
+            if(collageState.images.length === 0) { 
+                empty.classList.remove('hide'); pageControls.classList.add('hide'); return; 
+            } else { 
+                empty.classList.add('hide'); 
+            }
+
+            const imgs = collageState.images; const s = collageState.settings;
+            let pages = [];
+            let maxPerPage = s.layout === 'meitu12' ? 12 : 9;
+
+            if(s.paginate) {
+                for(let i=0; i<imgs.length; i+=maxPerPage) pages.push(imgs.slice(i, i+maxPerPage));
+            } else { pages.push(imgs); }
+
+            const totalPages = pages.length;
+            if(collageState.currentPage >= totalPages) collageState.currentPage = Math.max(0, totalPages - 1);
+
+            if (totalPages > 1 && s.paginate) {
+                pageControls.classList.remove('hide');
+                document.getElementById('page-indicator').innerText = `第 ${collageState.currentPage + 1} / ${totalPages} 页`;
+            } else {
+                pageControls.classList.add('hide');
+            }
+
+            const ratioMap = { '1/1': 'ratio-1-1', '3/4': 'ratio-3-4', '9/16': 'ratio-9-16', 'auto': 'ratio-auto' };
+            const ratioClass = s.layout === 'masonry' ? 'ratio-auto' : (ratioMap[s.ratio] || 'ratio-1-1');
+
+            pages.forEach((pageImgs, pageIndex) => {
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = `relative bg-white shadow-xl flex-shrink-0 w-full md:w-[600px] xl:w-[800px] mx-auto page-container group ${pageIndex !== collageState.currentPage ? 'hide' : ''}`;
+                pageWrapper.style.padding = `${s.gap}px`; pageWrapper.dataset.pageIndex = pageIndex;
+                
+                const grid = document.createElement('div'); grid.style.gap = `${s.gap}px`;
+
+                // 布局分支
+                if (s.layout === 'template') { 
+                    grid.className = 'layout-template'; grid.dataset.count = Math.min(pageImgs.length, 9); 
+                } else if (s.layout === 'meitu12') {
+                    grid.className = 'layout-meitu12'; 
+                } else if (s.layout === 'masonry') {
+                    grid.className = 'layout-masonry'; const colsNum = s.cols;
+                    const colDivs = Array.from({length: colsNum}).map(() => { const d = document.createElement('div'); d.className = 'masonry-col'; d.style.gap = `${s.gap}px`; return d; });
+                    pageImgs.forEach((imgObj, i) => {
+                        const globalIdx = (s.paginate ? pageIndex * maxPerPage : 0) + i + 1;
+                        colDivs[i % colsNum].appendChild(createImgBox(imgObj, s, ratioClass, globalIdx));
+                    });
+                    colDivs.forEach(c => grid.appendChild(c));
+                } else if (s.layout === 'vertical') { 
+                    grid.className = 'flex flex-col'; 
+                } else { 
+                    grid.className = 'grid'; grid.style.gridTemplateColumns = `repeat(${s.cols}, minmax(0, 1fr))`; 
+                }
+
+                if (s.layout !== 'masonry') { 
+                    pageImgs.forEach((imgObj, i) => {
+                        const globalIdx = (s.paginate ? pageIndex * maxPerPage : 0) + i + 1;
+                        grid.appendChild(createImgBox(imgObj, s, ratioClass, globalIdx));
+                    });
+                }
+
+                pageWrapper.appendChild(grid);
+                area.appendChild(pageWrapper);
+            });
+            updateWmUI();
+        }
+
+        function createImgBox(imgObj, s, ratioClass, seqNum) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `collage-img-box ${ratioClass} ${collageState.swapTargetId === imgObj.id ? 'is-swap-target' : ''} ${imgObj.selected ? 'is-selected' : ''}`;
+            itemDiv.dataset.id = imgObj.id;
+            
+            itemDiv.onclick = (e) => {
+                e.stopPropagation(); 
+                if(collageState.wmPlacingMode && collageState.activeWmId) {
+                    const pageRect = itemDiv.closest('.page-container').getBoundingClientRect();
+                    const px = e.clientX - pageRect.left; const py = e.clientY - pageRect.top;
+                    const wm = collageState.watermarks.find(w=>w.id===collageState.activeWmId);
+                    if(wm) { wm.x = (px / pageRect.width)*100; wm.y = (py / pageRect.height)*100; renderCollage(); }
+                    return;
+                }
+
+                if(collageState.swapTargetId === null) { collageState.swapTargetId = imgObj.id; } 
+                else if (collageState.swapTargetId === imgObj.id) { collageState.swapTargetId = null; } 
+                else {
+                    const idx1 = collageState.images.findIndex(i=>i.id === collageState.swapTargetId);
+                    const idx2 = collageState.images.findIndex(i=>i.id === imgObj.id);
+                    if(idx1>-1 && idx2>-1) { const temp = collageState.images[idx1]; collageState.images[idx1] = collageState.images[idx2]; collageState.images[idx2] = temp; }
+                    collageState.swapTargetId = null;
+                }
+                renderCollage();
+            };
+
+            // ★ 独立的复选框 (只在非水印拖拽模式下显示)
+            const chk = document.createElement('div');
+            chk.className = 'chk-overlay absolute top-2 left-2 w-6 h-6 rounded-full border-2 border-white bg-black/30 flex items-center justify-center text-white transition z-20 hover:bg-black/50 cursor-pointer pointer-events-auto';
+            chk.innerHTML = imgObj.selected ? `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : '';
+            chk.onclick = (e) => { e.stopPropagation(); toggleCollageImgSelect(imgObj.id); };
+
+            const imgEl = document.createElement('img'); imgEl.className = 'main-img'; imgEl.src = imgObj.url;
+
+            itemDiv.appendChild(chk); itemDiv.appendChild(imgEl);
+
+            // ★ 水印渲染：在单张图里叠加全局水印。
+            collageState.watermarks.forEach(wm => {
+                const wmDiv = document.createElement('div');
+                wmDiv.className = `wm-item ${collageState.activeWmId === wm.id ? 'active' : ''}`;
+                wmDiv.style.left = wm.x + '%'; wmDiv.style.top = wm.y + '%'; wmDiv.style.width = wm.w + '%'; wmDiv.style.opacity = wm.opacity;
+                const img = document.createElement('img'); img.src = wm.url; wmDiv.appendChild(img);
+                
+                if(collageState.wmPlacingMode) { 
+                    wmDiv.style.pointerEvents = 'none'; // 安放模式时穿透点击
+                } else { 
+                    wmDiv.onclick = (e) => { e.stopPropagation(); collageState.activeWmId = wm.id; updateWmUI(); }; 
+                }
+                itemDiv.appendChild(wmDiv);
+            });
+
+            const overHTML = getOverlayHtml(s, seqNum);
+            if(overHTML) itemDiv.insertAdjacentHTML('beforeend', overHTML);
+            return itemDiv;
+        }
+
+        // HTML 预览叠加 (纯外描边，宋体)
+        function getOverlayHtml(s, seqNum) {
+            let html = '';
+            // ★ 修改：加入 paint-order: stroke fill 和 宋体设置
+            const baseStyle = `font-family: 'SimSun', 'STSong', serif; font-weight: normal; paint-order: stroke fill;`;
+            const strokeCss = s.seqStroke && s.seqStrokeWidth > 0 ? `-webkit-text-stroke: ${s.seqStrokeWidth}px ${s.seqStrokeColor};` : '';
+            
+            if(s.seqOn) {
+                html += `<div class="c-overlay-text pos-${s.seqPos} ${s.seqGlow?'glow-text':''}" style="${baseStyle} font-size: ${Math.max(12, s.seqSz/2)}px; color: ${s.seqColor}; ${strokeCss}">${seqNum}</div>`;
+            }
+            if(s.price) {
+                html += `<div class="c-overlay-text pos-${s.pricePos}" style="${baseStyle} font-size: ${Math.max(10, s.priceSz/2)}px; color: ${s.priceColor}; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${s.price}</div>`;
+            }
+            return html;
+        }
+
+        function toggleCollageImgSelect(id) { const img = collageState.images.find(i=>i.id===id); if(img) img.selected = !img.selected; renderCollage(); }
+        function selectAllCollage() { const allSel = collageState.images.every(i=>i.selected); collageState.images.forEach(i=>i.selected = !allSel); renderCollage(); }
+        function deleteSelectedCollage() {
+            const selected = collageState.images.filter(i=>i.selected); if(selected.length === 0) return showToast('请先点击图片左上角的圆圈勾选');
+            collageState.images = collageState.images.filter(i=>!i.selected); collageState.swapTargetId = null; renderCollage();
+        }
+
+        // --- 水印交互逻辑 ---
+        function uploadWatermarks(e) {
+            const files = e.target.files; if(!files || files.length === 0) return;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const newId = 'wm_' + Math.random().toString(36).substr(2,9);
+                    // 默认中心点放置
+                    collageState.watermarks.push({ id: newId, url: ev.target.result, x: 50, y: 50, w: 30, opacity: 0.8 });
+                    collageState.activeWmId = newId; 
+                    collageState.wmPlacingMode = true; // 上传后自动进入调整模式
+                    document.getElementById('wm-controls').classList.remove('hide');
+                    document.getElementById('wm-sz').value = 30; document.getElementById('wm-op').value = 0.8;
+                    renderCollage();
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = '';
+        }
+
+        function updateWmUI() {
+            const controls = document.getElementById('wm-controls');
+            const startBtn = document.getElementById('wm-start-btn');
+            const moveMode = document.getElementById('wm-move-mode');
+            const area = document.getElementById('collage-canvas-area');
+
+            if(collageState.activeWmId) {
+                controls.classList.remove('hide');
+                const wm = collageState.watermarks.find(w=>w.id===collageState.activeWmId);
+                if(wm) { document.getElementById('wm-sz').value = wm.w; document.getElementById('wm-op').value = wm.opacity; }
+
+                if(collageState.wmPlacingMode) {
+                    moveMode.classList.remove('hide'); startBtn.classList.add('hide'); area.classList.add('crosshair-mode');
+                } else {
+                    moveMode.classList.add('hide'); startBtn.classList.remove('hide'); area.classList.remove('crosshair-mode');
+                }
+            } else { 
+                controls.classList.add('hide'); area.classList.remove('crosshair-mode'); 
             }
         }
 
-        function toggleSelectMode() { state.selectMode = !state.selectMode; state.selectedIds.clear(); render(); }
+        function startWmPlacement() { collageState.wmPlacingMode = true; renderCollage(); }
+        function endWmPlacement() { collageState.wmPlacingMode = false; renderCollage(); }
+        function updateActiveWm() { if(!collageState.activeWmId) return; const wm = collageState.watermarks.find(w=>w.id===collageState.activeWmId); if(wm) { wm.w = parseInt(document.getElementById('wm-sz').value); wm.opacity = parseFloat(document.getElementById('wm-op').value); renderCollage(); } }
+        function deleteActiveWm() { if(!collageState.activeWmId) return; collageState.watermarks = collageState.watermarks.filter(w=>w.id!==collageState.activeWmId); collageState.activeWmId = null; collageState.wmPlacingMode = false; document.getElementById('wm-controls').classList.add('hide'); renderCollage(); }
 
-        function selectAll() {
-            const db = state[state.mode];
-            const filteredItems = db.currentCategory === '全部' ? db.items : db.items.filter(i => i.category === db.currentCategory);
-            if (state.selectedIds.size === filteredItems.length && filteredItems.length > 0) state.selectedIds.clear(); 
-            else filteredItems.forEach(item => state.selectedIds.add(item.id));
-            renderItems(); updateActionBar();
+
+        // --- 核心：Canvas 高清导出引擎 (精准算法) ---
+        async function exportCollageAll() {
+            const pagesNum = document.querySelectorAll('.page-container').length;
+            if(pagesNum === 0) return showToast('没有可导出的内容');
+            showToast(`开始生成 ${pagesNum} 张高清图，请稍候...`);
+            
+            const originalPage = collageState.currentPage;
+            
+            for(let i=0; i<pagesNum; i++) {
+                collageState.currentPage = i; renderCollage();
+                await new Promise(r => setTimeout(r, 50)); 
+                await exportCollageSingle(i, true);
+            }
+            
+            collageState.currentPage = originalPage; renderCollage();
+            showToast('全部导出完成！');
         }
 
-        function bulkDelete() {
-            if (state.selectedIds.size === 0) return showToast('请先选择项目');
-            if (confirm(`确定要删除选中的 ${state.selectedIds.size} 项吗？`)) {
-                const db = state[state.mode];
-                db.items = db.items.filter(item => !state.selectedIds.has(item.id));
-                state.selectedIds.clear(); state.selectMode = false;
-                saveData(); render(); showToast('删除成功');
+        function exportCollageSingle(pageIndex, isBatch = false) {
+            return new Promise((resolve) => {
+                if(!isBatch) showToast('正在生成大图，请稍候...');
+                
+                const pageEl = document.querySelector(`.page-container[data-page-index="${pageIndex}"]`);
+                if(!pageEl) return resolve();
+
+                const wasHidden = pageEl.classList.contains('hide');
+                if(wasHidden) { pageEl.style.position = 'absolute'; pageEl.style.visibility = 'hidden'; pageEl.classList.remove('hide'); }
+
+                const domW = pageEl.offsetWidth; const domH = pageEl.offsetHeight;
+                const scale = Math.max(1200 / domW, 2); 
+                
+                const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                canvas.width = domW * scale; canvas.height = domH * scale;
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const boxEls = pageEl.querySelectorAll('.collage-img-box');
+                let imgDataList = [];
+                boxEls.forEach(box => {
+                    const id = box.dataset.id; const src = box.querySelector('.main-img').src;
+                    imgDataList.push({ src: src, id: id, x: box.offsetLeft * scale, y: box.offsetTop * scale, w: box.offsetWidth * scale, h: box.offsetHeight * scale, boxEl: box });
+                });
+
+                let promises = imgDataList.map((d) => { return new Promise((res) => { let iEl = new Image(); iEl.onload = () => res({...d, el: iEl}); iEl.src = d.src; }); });
+                let wmPromises = collageState.watermarks.map(wm => { return new Promise((res) => { let iEl = new Image(); iEl.onload = () => res({el: iEl, cfg: wm}); iEl.src = wm.url; }); });
+
+                Promise.all([...promises, ...wmPromises]).then((results) => {
+                    const loadedBaseImgs = results.slice(0, imgDataList.length);
+                    const loadedWms = results.slice(imgDataList.length);
+
+                    loadedBaseImgs.forEach((d) => {
+                        const isAuto = d.boxEl.classList.contains('ratio-auto') || (d.boxEl.closest('.layout-meitu12') && d.boxEl.style.gridColumn === 'span 5');
+                        if(isAuto) drawImageProp(ctx, d.el, d.x, d.y, d.w, d.h, 0.5, 0.5, 'contain');
+                        else drawImageProp(ctx, d.el, d.x, d.y, d.w, d.h, 0.5, 0.5, 'cover');
+
+                        // 画单图上的水印
+                        loadedWms.forEach(wmObj => {
+                            ctx.globalAlpha = wmObj.cfg.opacity;
+                            const wmW = d.w * (wmObj.cfg.w / 100);
+                            const wmH = (wmObj.el.height / wmObj.el.width) * wmW;
+                            const wmX = d.x + d.w * (wmObj.cfg.x / 100) - wmW / 2;
+                            const wmY = d.y + d.h * (wmObj.cfg.y / 100) - wmH / 2;
+                            ctx.drawImage(wmObj.el, wmX, wmY, wmW, wmH);
+                        });
+                        ctx.globalAlpha = 1.0;
+
+                        const s = collageState.settings;
+                        const txtEls = d.boxEl.querySelectorAll('.c-overlay-text');
+                        txtEls.forEach(txtEl => {
+                            const isPrice = s.price && txtEl.innerText === s.price;
+                            const pos = isPrice ? s.pricePos : s.seqPos;
+                            const fSz = isPrice ? s.priceSz : s.seqSz;
+                            const glow = isPrice ? false : s.seqGlow;
+                            const stroke = isPrice ? false : s.seqStroke;
+                            const strokeW = s.seqStrokeWidth;
+                            const color = isPrice ? s.priceColor : s.seqColor;
+                            const strokeColor = s.seqStrokeColor;
+
+                            drawCanvasText(ctx, txtEl.innerText, pos, fSz, scale, d.x, d.y, d.w, d.h, glow, stroke, strokeW, color, strokeColor);
+                        });
+                    });
+
+                    const link = document.createElement('a'); link.download = `MJ_Collage_Page_${pageIndex+1}_${Date.now()}.png`; link.href = canvas.toDataURL('image/png', 0.95); link.click();
+                    
+                    if(wasHidden) { pageEl.style.position = ''; pageEl.style.visibility = ''; pageEl.classList.add('hide'); }
+                    resolve();
+                });
+            });
+        }
+
+        // ★ 修改：精准数学坐标文字绘制，应用宋体
+        function drawCanvasText(ctx, text, pos, sz, scale, dx, dy, imgW, imgH, glow, stroke, strokeWidth, color, strokeColor) {
+            if(!text) return;
+            const fs = parseInt(sz) * scale;
+            // 采用宋体系列
+            ctx.font = `${fs}px 'SimSun', 'STSong', serif`;
+            
+            const padX = 8 * scale;
+            const padY = 6 * scale;
+
+            let tx = dx;
+            let ty = dy;
+
+            if(pos.includes('l')) { ctx.textAlign = 'left'; tx += padX; }
+            else if(pos.includes('r')) { ctx.textAlign = 'right'; tx += imgW - padX; }
+            else if(pos.includes('c')) { ctx.textAlign = 'center'; tx += imgW / 2; }
+
+            if(pos.includes('t')) { ctx.textBaseline = 'top'; ty += padY; }
+            else if(pos.includes('b')) { ctx.textBaseline = 'bottom'; ty += imgH - padY; }
+            else if(pos.includes('c') && !pos.includes('t') && !pos.includes('b')) { ctx.textBaseline = 'middle'; ty += imgH / 2; }
+
+            if (glow) { 
+                ctx.shadowColor = (color === '#000000') ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 12 * scale; 
+            } else { 
+                ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; 
+            }
+
+            // 先描边后填充，彻底防止描边吃字
+            if (stroke && strokeWidth > 0) {
+                ctx.strokeStyle = strokeColor || '#000000'; 
+                ctx.lineWidth = strokeWidth * scale * 2; // 因为 strokeText 居中，实际外观会减半，所以 *2
+                ctx.lineJoin = 'round';
+                ctx.strokeText(text, tx, ty);
+            }
+
+            ctx.fillStyle = color || '#ffffff'; 
+            ctx.fillText(text, tx, ty);
+            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+        }
+
+        function drawImageProp(ctx, img, x, y, w, h, offsetX=0.5, offsetY=0.5, mode='cover') {
+            var iw = img.width, ih = img.height, r = Math.min(w / iw, h / ih), nw = iw * r, nh = ih * r, cx = 1, cy = 1, cw = 1, ch = 1, ar = 1;
+            if(mode === 'cover') {
+                if (nw < w) ar = w / nw; if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh;
+                nw *= ar; nh *= ar; cw = iw / (nw / w); ch = ih / (nh / h); cx = (iw - cw) * offsetX; cy = (ih - ch) * offsetY;
+                if (cx < 0) cx = 0; if (cy < 0) cy = 0; if (cw > iw) cw = iw; if (ch > ih) ch = ih;
+                ctx.drawImage(img, cx, cy, cw, ch,  x, y, w, h);
+            } else {
+                const scale = Math.min(w / iw, h / ih); const sw = iw * scale; const sh = ih * scale;
+                const sx = x + (w - sw) / 2; const sy = y + (h - sh) / 2;
+                ctx.drawImage(img, sx, sy, sw, sh);
             }
         }
 
-        function bulkMove() {
-            if (state.selectedIds.size === 0) return showToast('请先选择项目');
-            const catSelect = document.getElementById('move-category-select');
-            catSelect.innerHTML = '';
-            state[state.mode].categories.forEach(cat => { catSelect.appendChild(new Option(cat, cat)); });
-            document.getElementById('modal-move').classList.remove('hide', 'hidden');
-        }
-
-        function confirmMove() {
-            const targetCategory = document.getElementById('move-category-select').value;
-            state[state.mode].items.forEach(item => { if (state.selectedIds.has(item.id)) item.category = targetCategory; });
-            state.selectedIds.clear(); state.selectMode = false;
-            saveData(); closeModal('modal-move'); render(); showToast('移动成功');
-        }
-
-        let toastTimeout;
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.remove('opacity-0', 'translate-y-4'); toast.classList.add('translate-y-0');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-4'); toast.classList.remove('translate-y-0');
-            }, 2500);
-        }
+        function copyToClipboard(text, successMsg = null) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast(successMsg || '复制成功'); } catch (err) { showToast('复制失败'); } finally { document.body.removeChild(ta); } }
+        function closeModal(id) { document.getElementById(id).classList.add('hide'); }
+        let toastTimeout; function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.classList.remove('opacity-0', 'translate-y-4'); toast.classList.add('translate-y-0'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-4'); toast.classList.remove('translate-y-0'); }, 2500); }
 
         window.onload = init;
     </script>
